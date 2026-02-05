@@ -78,7 +78,7 @@ form.addEventListener("submit", function (event) {
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
         navigator.serviceWorker
-            .register("service.js")
+            .register("sw.js")
             .then(() => console.log("Service Worker registered"))
             .catch(err => console.error("Service Worker error:", err));
     });

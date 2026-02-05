@@ -1,6 +1,6 @@
 const CACHE_NAME = "digital-access-for-all-v1";
 
-const FILES-TO-CACHE = [
+const FILES_TO_CACHE = [
     "./",
     "./index.html",
     "./app.js",
