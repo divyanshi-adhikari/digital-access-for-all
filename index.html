@@ -1,11 +1,12 @@
-<!DOCTYPE html> 
-<html lang="en"> 
-    <head> 
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0 "/>
-        <title>Digital Divide</title>
-        <link rel="manifest" href="manifest.json">
-    </head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6efd">
+    <title>Digital Divide</title>
+    <link rel="manifest" href="manifest.json">
+</head>
     <body>
         <header>
             <h1>Digital Divide PWA</h1>
@@ -13,8 +14,9 @@
         <main>
             <section>
                 <h2>User Information Form</h2>
+                <p id="offline-status" style="color:green;"></p>
 
-                <form> <!-- Personal Details -->
+                <form id="govForm"> <!-- Personal Details -->
                 
                     <div>
                         <label for="name">Full Name</label><br>
@@ -35,10 +37,12 @@
                         </select>
                     </div><br>
                     <div>
-                        <label for="city">City / District</label><br> <input type="text" id="city" name="city" required>
+                        <label for="city">City / District</label><br>
+                        <input type="text" id="city" name="city" required>
                     </div><br>
                     <div>
-                        <label for="address">Address</label><br> <textarea id="address" name="address" rows="4" required></textarea>
+                        <label for="address">Address</label><br>
+                        <textarea id="address" name="address" rows="4" required></textarea>
                     </div><br>
                     
                     <!-- Eligibility Details -->
@@ -54,7 +58,8 @@
                     </select>
                 </div><br>
                 <div>
-                    <label for="income">Annual Income</label><br> <input type="number" id="income" name="income" required>
+                    <label for="income">Annual Income</label><br>
+                    <input type="number" id="income" name="income" required>
                 </div><br>
                 
                 <!-- Action -->
@@ -64,5 +69,6 @@
             </form>
         </section>
     </main>
+    <script src="app.js"></script>
 </body>
 </html>
