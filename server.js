@@ -55,9 +55,13 @@ db.run(`
 db.run(`
   CREATE TABLE IF NOT EXISTS government_schemes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    scheme_name TEXT,
-    description TEXT,
-    eligibility TEXT
+    name TEXT,
+    dob TEXT,
+    state TEXT,
+    city TEXT,
+    address TEXT,
+    category TEXT,
+    income REAL
   )
 `);
 
