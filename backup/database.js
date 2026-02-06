@@ -4,7 +4,7 @@ const db = new sqlite3.Database("./database.db", (err) => {
   if (err) {
     console.log("Database error:", err.message);
   } else {
-    console.log("✓ Database connected");
+    console.log(" Database connected");
   }
 });
 
@@ -19,7 +19,7 @@ db.run(`
   )
 `, (err) => {
   if (err) console.log("Ration table error:", err.message);
-  else console.log("✓ Ration table ready");
+  else console.log("Ration table ready");
 });
 
 db.run(`
@@ -32,7 +32,7 @@ db.run(`
   )
 `, (err) => {
   if (err) console.log("Scholar10 table error:", err.message);
-  else console.log("✓ Scholar10 table ready");
+  else console.log(" Scholar10 table ready");
 });
 
 db.run(`
@@ -45,7 +45,7 @@ db.run(`
   )
 `, (err) => {
   if (err) console.log("Scholar12 table error:", err.message);
-  else console.log("✓ Scholar12 table ready");
+  else console.log("Scholar12 table ready");
 });
 
 db.run(`
@@ -61,7 +61,7 @@ db.run(`
   )
 `, (err) => {
   if (err) console.log("Scheme table error:", err.message);
-  else console.log("✓ Scheme table ready");
+  else console.log(" Scheme table ready");
 });
 
 module.exports = db;
