@@ -5,13 +5,11 @@ const express = require("express");
 const app = express();
 
 // ========== MIDDLEWARE - MUST BE FIRST ==========
-// 1. JSON parser (MOST IMPORTANT!)
+
 app.use(express.json());
 
-// 2. URL encoded parser
 app.use(express.urlencoded({ extended: true }));
 
-// 3. Request logger
 app.use((req, res, next) => {
   console.log(`${new Date().toLocaleTimeString()} ${req.method} ${req.url}`);
   console.log(`   Body:`, req.body); // This will show us if body is being parsed
