@@ -1,5 +1,5 @@
 // server.js - ABSOLUTE MINIMUM WORKING VERSION
-console.log("🔴 Starting Express server...");
+console.log(" Starting Express server...");
 
 const express = require("express");
 
@@ -14,7 +14,7 @@ app.use((req, res, next) => {
 
 // SIMPLE TEXT response for root
 app.get("/", (req, res) => {
-  console.log("✅ Root route triggered!");
+  console.log("Root route triggered!");
   res.type('text').send("HELLO! Server is working at /");
 });
 
@@ -22,9 +22,9 @@ app.get("/", (req, res) => {
 console.log("Setting up database...");
 try {
   require("./database");
-  console.log("✅ Database setup complete");
+  console.log("Database setup complete");
 } catch (err) {
-  console.log("⚠️ Database warning:", err.message);
+  console.log(" Database warning:", err.message);
 }
 
 // Load routes
@@ -40,9 +40,9 @@ try {
   app.use("/gov", scholar12Routes);
   app.use("/gov", schemeRoutes);
   
-  console.log("✅ API routes loaded: /gov/*");
+  console.log(" API routes loaded: /gov/*");
 } catch (err) {
-  console.log("❌ Route loading failed:", err.message);
+  console.log(" Route loading failed:", err.message);
 }
 
 // Test another simple route
@@ -54,17 +54,17 @@ app.get("/test", (req, res) => {
 const PORT = 4000;
 const server = app.listen(PORT, () => {
   console.log("\n" + "=".repeat(50));
-  console.log(`🚀 SERVER STARTED SUCCESSFULLY!`);
-  console.log(`📍 Port: ${PORT}`);
-  console.log(`🌐 Test URL: http://localhost:${PORT}/`);
-  console.log(`🌐 Test URL: http://localhost:${PORT}/test`);
+  console.log(` SERVER STARTED SUCCESSFULLY!`);
+  console.log(` Port: ${PORT}`);
+  console.log(` Test URL: http://localhost:${PORT}/`);
+  console.log(`Test URL: http://localhost:${PORT}/test`);
   console.log("=".repeat(50) + "\n");
 });
 
 // Error handling
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.log(`❌ Port ${PORT} is busy. Trying ${PORT + 1}...`);
+    console.log(` Port ${PORT} is busy. Trying ${PORT + 1}...`);
     app.listen(PORT + 1);
   }
 });
