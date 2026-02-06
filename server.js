@@ -1,70 +1,102 @@
-// server.js - ABSOLUTE MINIMUM WORKING VERSION
-console.log("🔴 Starting Express server...");
+// server.js - COMPLETE WORKING VERSION
+console.log(" Starting Government Services API...");
 
 const express = require("express");
-
-// Create app
 const app = express();
 
-// VERY IMPORTANT: Add this middleware to parse requests
+// ========== MIDDLEWARE - MUST BE FIRST ==========
+// 1. JSON parser (MOST IMPORTANT!)
+app.use(express.json());
+
+// 2. URL encoded parser
+app.use(express.urlencoded({ extended: true }));
+
+// 3. Request logger
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+  console.log(`${new Date().toLocaleTimeString()} ${req.method} ${req.url}`);
+  console.log(`   Body:`, req.body); // This will show us if body is being parsed
   next();
 });
+// ========== END MIDDLEWARE ==========
 
-// SIMPLE TEXT response for root
+// Root route
 app.get("/", (req, res) => {
-  console.log("✅ Root route triggered!");
-  res.type('text').send("HELLO! Server is working at /");
+  res.json({
+    success: true,
+    message: "Government Services API v1.0",
+    timestamp: new Date().toISOString()
+  });
 });
 
-// Import database (tables will be created)
-console.log("Setting up database...");
+// Health check
+app.get("/health", (req, res) => {
+  res.json({ status: "OK", timestamp: new Date().toISOString() });
+});
+
+// ========== DATABASE ==========
+console.log(" Initializing database...");
 try {
   require("./database");
-  console.log("✅ Database setup complete");
+  console.log(" Database connected");
 } catch (err) {
-  console.log("⚠️ Database warning:", err.message);
+  console.log(" Database error:", err.message);
 }
 
-// Load routes
-console.log("Loading API routes...");
+// ========== ROUTES ==========
+console.log("Loading routes...");
 try {
   const rationRoutes = require("./routes/rationRoutes");
   const scholar10Routes = require("./routes/scholarship10Routes");
   const scholar12Routes = require("./routes/scholarship12Routes");
   const schemeRoutes = require("./routes/schemeRoutes");
   
+  // Mount routes
   app.use("/gov", rationRoutes);
   app.use("/gov", scholar10Routes);
   app.use("/gov", scholar12Routes);
   app.use("/gov", schemeRoutes);
   
-  console.log("✅ API routes loaded: /gov/*");
+  console.log(" Routes mounted at /gov");
 } catch (err) {
-  console.log("❌ Route loading failed:", err.message);
+  console.log(" Route error:", err.message);
 }
 
-// Test another simple route
-app.get("/test", (req, res) => {
-  res.send("Test route is working!");
+// ========== ERROR HANDLING ==========
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: `Route ${req.method} ${req.url} not found`
+  });
 });
 
-// Start server on PORT 4000 (to avoid conflicts)
-const PORT = 4000;
-const server = app.listen(PORT, () => {
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error(" Server error:", err);
+  res.status(500).json({
+    success: false,
+    error: "Internal server error",
+    message: err.message
+  });
+});
+
+// ========== START SERVER ==========
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
   console.log("\n" + "=".repeat(50));
-  console.log(`🚀 SERVER STARTED SUCCESSFULLY!`);
-  console.log(`📍 Port: ${PORT}`);
-  console.log(`🌐 Test URL: http://localhost:${PORT}/`);
-  console.log(`🌐 Test URL: http://localhost:${PORT}/test`);
-  console.log("=".repeat(50) + "\n");
-});
-
-// Error handling
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.log(`❌ Port ${PORT} is busy. Trying ${PORT + 1}...`);
-    app.listen(PORT + 1);
-  }
+  console.log(`SERVER RUNNING`);
+  console.log(` Port: ${PORT}`);
+  console.log(`Local: http://localhost:${PORT}`);
+  console.log(`Health: http://localhost:${PORT}/health`);
+  console.log("=".repeat(50));
+  console.log("\n Available endpoints:");
+  console.log("   POST /gov/ration     - Create ration card");
+  console.log("   GET  /gov/ration     - Get all ration cards");
+  console.log("   POST /gov/scheme     - Register for scheme");
+  console.log("   GET  /gov/scheme     - Get all schemes");
+  console.log("   POST /gov/scholar10  - Apply for 10th scholarship");
+  console.log("   GET  /gov/scholar10  - Get all 10th scholarships");
+  console.log("   POST /gov/scholar12  - Apply for 12th scholarship");
+  console.log("   GET  /gov/scholar12  - Get all 12th scholarships");
+  console.log("\n");
 });
