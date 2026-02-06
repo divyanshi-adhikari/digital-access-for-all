@@ -1,3 +1,6 @@
+import{ initDB, saveApplication }from "./db.js";
+initDB();
+
 // Populate State dropdown
 const states = [
     "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh",
@@ -30,23 +33,6 @@ function updateStatus() {
 window.addEventListener("online", updateStatus);
 window.addEventListener("offline", updateStatus);
 updateStatus();
-// IndexedDB setup
-let db;
-const request = indexedDB.open("DigitalDivideDB", 1);
-
-request.onupgradeneeded = (e) => {
-    db = e.target.result;
-    db.createObjectStore("applications", { keyPath: "id", autoIncrement: true });
-};
-
-request.onsuccess = (e) => {
-    db = e.target.result;
-    console.log("Database connected");
-};
-
-request.onerror = (e) => {
-    console.log("IndexedDB error:", e.target.error);
-};
 
 // Form submit handler
 const form = document.querySelector("form");
@@ -63,17 +49,21 @@ form.addEventListener("submit", function (event) {
         income: document.getElementById("income").value
     };
 
-    const transaction = db.transaction(["applications"], "readwrite");
-    const store = transaction.objectStore("applications");
-    const addRequest = store.add(data);
-
-    addRequest.onsuccess = () => {
-        alert("Form saved locally. It will sync when internet is available.");
-        form.reset(); // clear form
-    };
-    addRequest.onerror = () => console.log("Error storing data");
+    saveApplication({
+    formType: "government",
+    ...data,
+    createdAt: new Date()
+}).then(() => {
+    alert(
+        navigator.onLine
+            ? "Form saved successfully."
+            : "Form saved locally. It will sync when internet is available."
+    );
+    form.reset();
+}).catch(() => {
+    console.log("Error storing data");
 });
-
+});
 // Register Service Worker
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
