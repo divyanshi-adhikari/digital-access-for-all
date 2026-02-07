@@ -36,12 +36,14 @@
 
         <div class="field">
           <label for="category">Category</label>
-          <input type="text" id="category" required />
-        </div>
-
-        <div class="field">
-          <label for="ration_number">Ration Card Number (if any)</label>
-          <input type="text" id="ration_number" />
+          <select id="category" required>
+            <option value="">Select category</option>
+            <option value="General">General</option>
+            <option value="SC">SC</option>
+            <option value="ST">ST</option>
+            <option value="OBC">OBC</option>
+            <option value="EWS">EWS</option>
+          </select>
         </div>
 
         <div class="field">

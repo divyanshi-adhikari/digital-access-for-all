@@ -50,4 +50,19 @@ body {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
 }
 
-.form-containe
+.form-contain 
+
+.field select {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  outline: none;
+  background: #ffffff;
+}
+
+.field select:focus {
+  border-color: #0d6efd;
+}
+

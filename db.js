@@ -33,3 +33,13 @@ export function saveApplication(data) {
     req.onerror = () => reject("Save failed");
 });
 }
+export function getAllApplications() {
+    return new Promise((resolve, reject) => {
+    const tx = db.transaction("applications", "readonly");
+    const store = tx.objectStore("applications");
+    const req = store.getAll();
+
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject("Failed to read applications");
+});
+}
