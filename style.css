@@ -1,0 +1,53 @@
+/* =========================GLOBAL RESET & BASE========================= */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f9;
+  margin: 0;
+  padding: 0;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* =========================HEADER========================= */
+.app-header {
+  background: #0d6efd;
+  color: #ffffff;
+  padding: 18px 16px;
+  text-align: center;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.app-header nav {
+  margin-top: 10px;
+}
+
+.app-header nav a {
+  color: #ffffff;
+  text-decoration: none;
+  margin: 0 10px;
+  font-weight: 500;
+}
+
+.app-header nav a:hover {
+  text-decoration: underline;
+}
+
+/* =========================FORM CARD========================= */
+.form-container {
+  max-width: 440px;
+  margin: 48px auto;
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.form-containe
