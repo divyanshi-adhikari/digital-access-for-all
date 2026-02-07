@@ -1,65 +1,63 @@
-// server.js - COMPLETE WORKING VERSION
-console.log(" Starting Government Services API...");
+// server.js - COMPLETE VERSION
+console.log("Starting Government Services API...");
 
 const express = require("express");
 const app = express();
 
-// ========== MIDDLEWARE - MUST BE FIRST ==========
-
+// Middleware
 app.use(express.json());
-
 app.use(express.urlencoded({ extended: true }));
 
+// Request logger
 app.use((req, res, next) => {
-  console.log(`${new Date().toLocaleTimeString()} ${req.method} ${req.url}`);
-  console.log(`   Body:`, req.body); // This will show us if body is being parsed
+  console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
   next();
 });
-// ========== END MIDDLEWARE ==========
+
+// Database
+console.log(" Initializing database...");
+require("./database");
+console.log("Database connected");
+
+// Routes
+console.log("Loading routes...");
+app.use("/gov", require("./routes/rationRoutes"));
+app.use("/gov", require("./routes/scholarship10Routes"));
+app.use("/gov", require("./routes/scholarship12Routes"));
+app.use("/gov", require("./routes/schemeRoutes"));
+app.use("/sync", require("./routes/syncRoutes"));
+console.log(" All routes loaded");
 
 // Root route
 app.get("/", (req, res) => {
   res.json({
     success: true,
     message: "Government Services API v1.0",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      government: {
+        ration: { POST: "/gov/ration", GET: "/gov/ration" },
+        scheme: { POST: "/gov/scheme", GET: "/gov/scheme" },
+        scholar10: { POST: "/gov/scholar10", GET: "/gov/scholar10" },
+        scholar12: { POST: "/gov/scholar12", GET: "/gov/scholar12" }
+      },
+      middleware: {
+        sync: { POST: "/sync/submit" }
+      }
+    }
   });
 });
 
+// Health check
 app.get("/health", (req, res) => {
-  res.json({ status: "OK", timestamp: new Date().toISOString() });
+  res.json({ 
+    status: "OK", 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
-// ========== DATABASE ==========
-console.log(" Initializing database...");
-try {
-  require("./database");
-  console.log(" Database connected");
-} catch (err) {
-  console.log(" Database error:", err.message);
-}
-
-// ========== ROUTES ==========
-console.log("Loading routes...");
-try {
-  const rationRoutes = require("./routes/rationRoutes");
-  const scholar10Routes = require("./routes/scholarship10Routes");
-  const scholar12Routes = require("./routes/scholarship12Routes");
-  const schemeRoutes = require("./routes/schemeRoutes");
-  
-  // Mount routes
-  app.use("/gov", rationRoutes);
-  app.use("/gov", scholar10Routes);
-  app.use("/gov", scholar12Routes);
-  app.use("/gov", schemeRoutes);
-  
-  console.log(" Routes mounted at /gov");
-} catch (err) {
-  console.log(" Route error:", err.message);
-}
-
-// ========== ERROR HANDLING ==========
-// 404 handler
+// Error handlers
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -67,9 +65,8 @@ app.use((req, res) => {
   });
 });
 
-// Global error handler
 app.use((err, req, res, next) => {
-  console.error(" Server error:", err);
+  console.error("Server error:", err);
   res.status(500).json({
     success: false,
     error: "Internal server error",
@@ -77,23 +74,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ========== START SERVER ==========
-const PORT = process.env.PORT || 4000;
+// Start server
+const PORT = 4000;
 app.listen(PORT, () => {
   console.log("\n" + "=".repeat(50));
-  console.log(`SERVER RUNNING`);
-  console.log(` Port: ${PORT}`);
-  console.log(`Local: http://localhost:${PORT}`);
-  console.log(`Health: http://localhost:${PORT}/health`);
+  console.log(` SERVER RUNNING ON PORT ${PORT}`);
+  console.log(` http://localhost:${PORT}`);
   console.log("=".repeat(50));
-  console.log("\n Available endpoints:");
-  console.log("   POST /gov/ration     - Create ration card");
-  console.log("   GET  /gov/ration     - Get all ration cards");
-  console.log("   POST /gov/scheme     - Register for scheme");
-  console.log("   GET  /gov/scheme     - Get all schemes");
-  console.log("   POST /gov/scholar10  - Apply for 10th scholarship");
-  console.log("   GET  /gov/scholar10  - Get all 10th scholarships");
-  console.log("   POST /gov/scholar12  - Apply for 12th scholarship");
-  console.log("   GET  /gov/scholar12  - Get all 12th scholarships");
+  console.log("\n Test middleware:");
+  console.log("   POST http://localhost:4000/sync/submit");
+  console.log("   Body: {\"service_type\":\"ration\",\"form_data\":{\"name\":\"...\",\"category\":\"SC\",\"ration_number\":\"...\",\"family_members\":3}}");
   console.log("\n");
 });
