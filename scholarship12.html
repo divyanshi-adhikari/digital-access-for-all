@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0d6efd" />
+    <title>12th Scholarship Application</title>
+    <!-- Reuse same stylesheet -->
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    
+    <header class="app-header">
+    <h1>Digital Divide PWA</h1>
+    <nav>
+        <a href="index.html">Government Scheme</a> |
+        <a href="scholarship10.html">10th Scholarship</a> |
+        <a href="scholarship12.html">12th Scholarship</a>
+    </nav>
+</header>
+
+<main>
+    <div class="form-container">
+        <h2>Apply for 12th Scholarship</h2>
+        <!-- IMPORTANT: IDs must match scholarship12.js -->
+        <form id="scholarship12Form">
+
+        <div class="field">
+        <label for="name">Student Name</label>
+        <input type="text" id="name" required />
+        </div>
+
+        <div class="field">
+        <label for="college">College Name</label>
+        <input type="text" id="college" required />
+        </div>
+
+        <div class="field">
+            <label for="marks">Marks / Percentage</label>
+            <input type="number" id="marks" required />
+        </div>
+
+        <div class="field">
+            <label for="year">Passing Year</label>
+            <input type="number" id="year" required />
+        </div>
+
+        <button type="submit">Submit Application</button>
+    </form>
+    </div>
+</main>
+<footer class="app-footer">
+    <p>Offline submissions are saved automatically.</p>
+</footer>
+
+<!-- IMPORTANT -->
+<script type="module" src="scholarship12.js"></script>
+
+</body>
+</html>
