@@ -65,3 +65,16 @@ db.run(`
 });
 
 module.exports = db;
+
+// Add columns one by one for each table
+db.run(`ALTER TABLE ration_cards ADD COLUMN application_id TEXT`);
+db.run(`ALTER TABLE ration_cards ADD COLUMN status TEXT DEFAULT 'PENDING'`);
+
+db.run(`ALTER TABLE government_schemes ADD COLUMN application_id TEXT`);
+db.run(`ALTER TABLE government_schemes ADD COLUMN status TEXT DEFAULT 'PENDING'`);
+
+db.run(`ALTER TABLE scholarship_10th ADD COLUMN application_id TEXT`);
+db.run(`ALTER TABLE scholarship_10th ADD COLUMN status TEXT DEFAULT 'PENDING'`);
+
+db.run(`ALTER TABLE scholarship_12th ADD COLUMN application_id TEXT`);
+db.run(`ALTER TABLE scholarship_12th ADD COLUMN status TEXT DEFAULT 'PENDING'`);
