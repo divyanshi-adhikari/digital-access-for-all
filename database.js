@@ -4,7 +4,7 @@ const db = new sqlite3.Database("./database.db", (err) => {
   if (err) {
     console.log("Database error:", err.message);
   } else {
-    console.log("s Database connected");
+    console.log("Database connected");
   }
 });
 
@@ -19,7 +19,10 @@ db.run(`
   )
 `, (err) => {
   if (err) console.log("Ration table error:", err.message);
-  else console.log("Ration table ready");
+  else {
+    console.log("Ration table ready");
+    safeAddColumns('ration_cards');
+  }
 });
 
 db.run(`
@@ -32,7 +35,10 @@ db.run(`
   )
 `, (err) => {
   if (err) console.log("Scholar10 table error:", err.message);
-  else console.log("Scholar10 table ready");
+  else {
+    console.log(" Scholar10 table ready");
+    safeAddColumns('scholarship_10th');
+  }
 });
 
 db.run(`
@@ -45,7 +51,10 @@ db.run(`
   )
 `, (err) => {
   if (err) console.log("Scholar12 table error:", err.message);
-  else console.log(" Scholar12 table ready");
+  else {
+    console.log(" Scholar12 table ready");
+    safeAddColumns('scholarship_12th');
+  }
 });
 
 db.run(`
@@ -61,20 +70,57 @@ db.run(`
   )
 `, (err) => {
   if (err) console.log("Scheme table error:", err.message);
-  else console.log(" Scheme table ready");
+  else {
+    console.log(" Scheme table ready");
+    safeAddColumns('government_schemes');
+  }
 });
 
+// Function to safely add columns (won't duplicate)
+function safeAddColumns(tableName) {
+  // Use db.all() to get ALL column info rows
+  db.all(`PRAGMA table_info(${tableName})`, (err, columns) => {
+    if (err) {
+      console.log(`Error checking ${tableName}:`, err.message);
+      return;
+    }
+    
+    const columnNames = columns.map(col => col.name);
+    
+    // Only add if column doesn't exist
+    if (!columnNames.includes('application_id')) {
+      db.run(`ALTER TABLE ${tableName} ADD COLUMN application_id TEXT`, (alterErr) => {
+        if (alterErr) {
+          // Check if error is about duplicate column
+          if (alterErr.message.includes('duplicate column name')) {
+            console.log(`Column application_id already exists in ${tableName}`);
+          } else {
+            console.log(`Error adding application_id to ${tableName}:`, alterErr.message);
+          }
+        } else {
+          console.log(` Added application_id to ${tableName}`);
+        }
+      });
+    } else {
+      console.log(`Column application_id already exists in ${tableName}`);
+    }
+    
+    if (!columnNames.includes('status')) {
+      db.run(`ALTER TABLE ${tableName} ADD COLUMN status TEXT DEFAULT 'PENDING'`, (alterErr) => {
+        if (alterErr) {
+          if (alterErr.message.includes('duplicate column name')) {
+            console.log(`Column status already exists in ${tableName}`);
+          } else {
+            console.log(`Error adding status to ${tableName}:`, alterErr.message);
+          }
+        } else {
+          console.log(`Added status to ${tableName}`);
+        }
+      });
+    } else {
+      console.log(`Column status already exists in ${tableName}`);
+    }
+  });
+}
+
 module.exports = db;
-
-// Add columns one by one for each table
-//db.run(`ALTER TABLE ration_cards ADD COLUMN application_id TEXT`);
-//db.run(`ALTER TABLE ration_cards ADD COLUMN status TEXT DEFAULT 'PENDING'`);
-
-//db.run(`ALTER TABLE government_schemes ADD COLUMN application_id TEXT`);
-//db.run(`ALTER TABLE government_schemes ADD COLUMN status TEXT DEFAULT 'PENDING'`);
-
-//db.run(`ALTER TABLE scholarship_10th ADD COLUMN application_id TEXT`);
-//db.run(`ALTER TABLE scholarship_10th ADD COLUMN status TEXT DEFAULT 'PENDING'`);
-
-//db.run(`ALTER TABLE scholarship_12th ADD COLUMN application_id TEXT`);
-//db.run(`ALTER TABLE scholarship_12th ADD COLUMN status TEXT DEFAULT 'PENDING'`);
