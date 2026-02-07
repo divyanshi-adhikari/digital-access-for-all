@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+        padding: 20px;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    h2 {
+        margin-top: 40px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        margin-top: 10px;
+    }
+
+    th, td {
+        padding: 10px;
+        border: 1px solid #ddd;
+        text-align: left;
+    }
+
+    th {
+        background: #2c3e50;
+        color: white;
+    }
+
+    tr:nth-child(even) {
+        background: #f9f9f9;
+    }
+
+    .status {
+        font-weight: bold;
+        color: #e67e22;
+    }
+    </style>
+</head>
+<body>
+    
+    <h1>Admin Dashboard</h1>
+    <input
+    type="text"
+    id="searchInput"
+    placeholder="Search by Application ID or Name"
+    onkeyup="filterTable()"
+    />
+
+    <!-- RATION CARD -->
+    <h2>Ration Card Applications</h2>
+    <table id="rationTable">
+    <thead>
+    <tr>
+        <th>Application ID</th>
+        <th>Name</th>
+        <th>Category</th>
+        <th>Family Members</th>
+        <th>Status</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+    <!-- GOV SCHEME -->
+    <h2>Government Scheme Applications</h2>
+    <table id="schemeTable">
+    <thead>
+    <tr>
+        <th>Application ID</th>
+        <th>Name</th>
+        <th>Category</th>
+        <th>State</th>
+        <th>Status</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+    <!-- SCHOLARSHIP 10 -->
+    <h2>Scholarship (Class 10)</h2>
+    <table id="scholar10Table">
+    <thead>
+    <tr>
+        <th>Application ID</th>
+        <th>Name</th>
+        <th>School</th>
+        <th>Marks</th>
+        <th>Status</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+    <!-- SCHOLARSHIP 12 -->
+    <h2>Scholarship (Class 12)</h2>
+    <table id="scholar12Table">
+    <thead>
+    <tr>
+        <th>Application ID</th>
+        <th>Name</th>
+        <th>College</th>
+        <th>Marks</th>
+        <th>Status</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script src="admin.js"></script>
+</body>
+</html>
+
