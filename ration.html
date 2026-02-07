@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0d6efd" />
+
+  <title>Ration Card Application</title>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <header class="app-header">
+    <h1>Digital Divide PWA</h1>
+    <nav>
+      <a href="index.html">Government Scheme</a> |
+      <a href="scholarship10.html">10th Scholarship</a> |
+      <a href="scholarship12.html">12th Scholarship</a> |
+      <a href="ration.html">Ration Card</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="form-container">
+      <h2>Apply for Ration Card</h2>
+
+      <!-- IMPORTANT: IDs must match ration.js -->
+      <form id="rationForm">
+
+        <div class="field">
+          <label for="name">Head of Family Name</label>
+          <input type="text" id="name" required />
+        </div>
+
+        <div class="field">
+          <label for="category">Category</label>
+          <input type="text" id="category" required />
+        </div>
+
+        <div class="field">
+          <label for="ration_number">Ration Card Number (if any)</label>
+          <input type="text" id="ration_number" />
+        </div>
+
+        <div class="field">
+          <label for="family_members">Number of Family Members</label>
+          <input type="number" id="family_members" required />
+        </div>
+
+        <button type="submit">Submit Application</button>
+      </form>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <p>Offline submissions are saved automatically.</p>
+  </footer>
+
+  <!-- JS will be added next -->
+  <script type="module" src="ration.js"></script>
+
+</body>
+</html>
