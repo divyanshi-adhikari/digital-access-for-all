@@ -1,4 +1,4 @@
-const db = require("../server");
+const db = require("../database");
 
 exports.insertScholar10 = (data, callback) => {
   const sql = `
@@ -9,5 +9,5 @@ exports.insertScholar10 = (data, callback) => {
 };
 
 exports.getAllScholar10 = (callback) => {
-  db.all("SELECT * FROM scholarship_10th", callback);
+  db.all("SELECT * FROM scholarship_10th ORDER BY id DESC", callback);
 };

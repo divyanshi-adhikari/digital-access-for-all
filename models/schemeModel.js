@@ -1,4 +1,4 @@
-const db = require("../server");
+const db = require("../database");
 
 exports.insertScheme = (data, callback) => {
   const sql = `
@@ -7,19 +7,11 @@ exports.insertScheme = (data, callback) => {
   `;
   db.run(
     sql,
-    [
-      data.name,
-      data.dob,
-      data.state,
-      data.city,
-      data.address,
-      data.category,
-      data.income
-    ],
+    [data.name, data.dob, data.state, data.city, data.address, data.category, data.income],
     callback
   );
 };
 
 exports.getAllSchemes = (callback) => {
-  db.all("SELECT * FROM government_schemes", callback);
+  db.all("SELECT * FROM government_schemes ORDER BY id DESC", callback);
 };
