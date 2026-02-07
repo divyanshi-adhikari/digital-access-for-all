@@ -1,5 +1,8 @@
-import{ initDB, saveApplication }from "./db.js";
-initDB();
+import { initDB, saveApplication } from "./db.js";
+import { syncApplications } from "./sync.js";
+
+await initDB();
+
 
 // Populate State dropdown
 const states = [
