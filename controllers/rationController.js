@@ -10,7 +10,7 @@ exports.createRation = (req, res) => {
   
   // Check if body exists
   if (!req.body || Object.keys(req.body).length === 0) {
-    console.log("❌ Request body is empty!");
+    console.log(" Request body is empty!");
     return res.status(400).json({ 
       success: false, 
       message: "Request body is empty or not in JSON format",
@@ -66,7 +66,7 @@ exports.createRation = (req, res) => {
           error: err.message
         });
       }
-      console.log("✅ Ration created successfully");
+      console.log("Ration created successfully");
       res.status(201).json({ 
         success: true, 
         message: "Ration card created successfully" 
