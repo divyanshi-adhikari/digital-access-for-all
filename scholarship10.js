@@ -1,30 +1,133 @@
-import { initDB, saveApplication } from "./db.js";
+import { initDB, saveApplication, getPendingSyncs, markSynced, updateSyncStatus } from "./db.js";
+
 await initDB();
 
 const form = document.getElementById("scholarship10Form");
 
-form.addEventListener("submit", (e) => {
+// Sync function for scholarship10
+async function syncScholar10ToBackend(formData, dbId = null) {
+    try {
+        const payload = {
+            service_type: "scholar10",  // Changed from scholarship10 to match backend
+            form_data: {
+                name: formData.name,
+                school: formData.school,
+                marks: formData.marks,
+                year: formData.year,
+                timestamp: new Date().toISOString()
+            }
+        };
+        
+        console.log('Sending scholar10 sync request:', payload);
+        
+        const response = await fetch('http://localhost:4000/sync/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Scholar10 sync successful:', result);
+        
+        // Mark as synced in IndexedDB if we have a dbId
+        if (dbId && result.success) {
+            await markSynced(dbId, result);
+        }
+        
+        return { success: true, data: result };
+    } catch (error) {
+        console.error('Scholar10 sync failed:', error);
+        
+        // Update sync status to failed
+        if (dbId) {
+            await updateSyncStatus(dbId, "sync_failed", error);
+        }
+        
+        return { 
+            success: false, 
+            error: error.message,
+            dbId: dbId
+        };
+    }
+}
+
+// Auto-retry pending syncs when coming online
+window.addEventListener('online', async () => {
+    console.log('Device is online. Checking for pending scholarship10 syncs...');
+    
+    try {
+        const pendingSyncs = await getPendingSyncs();
+        const scholar10Pending = pendingSyncs.filter(app => app.formType === "scholarship10");
+        console.log(`Found ${scholar10Pending.length} pending scholarship10 syncs`);
+        
+        for (const pending of scholar10Pending) {
+            console.log('Retrying scholarship10 sync for:', pending.id);
+            
+            const result = await syncScholar10ToBackend(pending, pending.id);
+            
+            if (result.success) {
+                console.log('Successfully synced pending scholarship10 application:', pending.id);
+            } else {
+                console.log('Failed to sync pending scholarship10 application:', pending.id);
+            }
+        }
+    } catch (error) {
+        console.error('Error during auto-sync:', error);
+    }
+});
+
+form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const data = {
-    name: document.getElementById("name").value,
-    school: document.getElementById("school").value,
-    marks:Number (document.getElementById("marks").value),
-    year:Number (document.getElementById("year").value),
-};
+        name: document.getElementById("name").value,
+        school: document.getElementById("school").value,
+        marks: Number(document.getElementById("marks").value),
+        year: Number(document.getElementById("year").value),
+    };
 
-saveApplication({
-    formType: "scholarship10",
-    ...data,
-    createdAt: new Date()
-})
-.then(() => {
-    alert(
-        navigator.onLine
-        ? "Scholarship 10th saved"
-        : "Saved offline. Will sync later."
-    );
-    form.reset();
-})
-.catch(() => alert("Error saving data"));
+    try {
+        // Save to IndexedDB first
+        const dbResult = await saveApplication({
+            formType: "scholarship10",
+            ...data,
+            status: "pending_sync",
+            createdAt: new Date()
+        });
+        
+        console.log('Saved to IndexedDB with ID:', dbResult.id);
+        
+        // Try to sync if online
+        if (navigator.onLine) {
+            const syncResult = await syncScholar10ToBackend(data, dbResult.id);
+            
+            if (syncResult.success) {
+                alert(`Scholarship 10th application submitted successfully!\nApplication ID: ${syncResult.data.application_id}\nStatus: ${syncResult.data.status}`);
+            } else {
+                alert(`Scholarship 10th saved locally.\nWill automatically sync when possible.\nError: ${syncResult.error}`);
+            }
+        } else {
+            alert("Scholarship 10th saved offline.\nWill sync automatically when you're back online.");
+        }
+        
+        form.reset();
+    } catch (error) {
+        console.error('Error saving scholarship10 data:', error);
+        alert("Error saving scholarship data");
+    }
 });
+
+// Optional: Periodically check for pending syncs
+setInterval(async () => {
+    if (navigator.onLine) {
+        const pending = await getPendingSyncs();
+        const scholar10Pending = pending.filter(app => app.formType === "scholarship10");
+        if (scholar10Pending.length > 0) {
+            console.log(`Background sync: ${scholar10Pending.length} pending scholarship10 applications`);
+        }
+    }
+}, 30000); // Check every 30 seconds
