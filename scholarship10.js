@@ -4,11 +4,11 @@ await initDB();
 
 const form = document.getElementById("scholarship10Form");
 
-// Sync function for scholarship10
+// ================= SYNC FUNCTION =================
 async function syncScholar10ToBackend(formData, dbId = null) {
     try {
         const payload = {
-            service_type: "scholar10",  // Changed from scholarship10 to match backend
+            service_type: "scholar10",
             form_data: {
                 name: formData.name,
                 school: formData.school,
@@ -33,7 +33,6 @@ async function syncScholar10ToBackend(formData, dbId = null) {
         const result = await response.json();
         console.log('Scholar10 sync successful:', result);
         
-        // Mark as synced in IndexedDB if we have a dbId
         if (dbId && result.success) {
             await markSynced(dbId, result);
         }
@@ -42,7 +41,6 @@ async function syncScholar10ToBackend(formData, dbId = null) {
     } catch (error) {
         console.error('Scholar10 sync failed:', error);
         
-        // Update sync status to failed
         if (dbId) {
             await updateSyncStatus(dbId, "sync_failed", error);
         }
@@ -55,7 +53,7 @@ async function syncScholar10ToBackend(formData, dbId = null) {
     }
 }
 
-// Auto-retry pending syncs when coming online
+// ================= AUTO-SYNC WHEN ONLINE =================
 window.addEventListener('online', async () => {
     console.log('Device is online. Checking for pending scholarship10 syncs...');
     
@@ -80,6 +78,7 @@ window.addEventListener('online', async () => {
     }
 });
 
+// ================= FORM SUBMISSION =================
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -106,28 +105,34 @@ form.addEventListener("submit", async (e) => {
             const syncResult = await syncScholar10ToBackend(data, dbResult.id);
             
             if (syncResult.success) {
-                alert(`Scholarship 10th application submitted successfully!\nApplication ID: ${syncResult.data.application_id}\nStatus: ${syncResult.data.status}`);
+                alert(`✅ Scholarship 10th application submitted successfully!\nApplication ID: ${syncResult.data.application_id}\nStatus: ${syncResult.data.status}`);
             } else {
-                alert(`Scholarship 10th saved locally.\nWill automatically sync when possible.\nError: ${syncResult.error}`);
+                alert(`⚠️ Scholarship 10th saved locally.\nWill automatically sync when possible.\nError: ${syncResult.error}`);
             }
         } else {
-            alert("Scholarship 10th saved offline.\nWill sync automatically when you're back online.");
+            alert("📴 Scholarship 10th saved offline.\nWill sync automatically when you're back online.");
         }
         
         form.reset();
     } catch (error) {
         console.error('Error saving scholarship10 data:', error);
-        alert("Error saving scholarship data");
+        alert("❌ Error saving scholarship data");
     }
 });
 
-// Optional: Periodically check for pending syncs
+// ================= BACKGROUND SYNC CHECK =================
 setInterval(async () => {
     if (navigator.onLine) {
         const pending = await getPendingSyncs();
         const scholar10Pending = pending.filter(app => app.formType === "scholarship10");
         if (scholar10Pending.length > 0) {
             console.log(`Background sync: ${scholar10Pending.length} pending scholarship10 applications`);
+            // Optional: Auto-sync them
+            // for (const pending of scholar10Pending) {
+            //     await syncScholar10ToBackend(pending, pending.id);
+            // }
         }
     }
 }, 30000); // Check every 30 seconds
+
+console.log("scholarship10.js loaded successfully");
