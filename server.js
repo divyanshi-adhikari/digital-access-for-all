@@ -1,10 +1,12 @@
-// server.js - COMPLETE VERSION
+// server.js - COMPLETE VERSION WITH CORS & STATIC SERVING
 console.log("Starting Government Services API...");
 
 const express = require("express");
+const cors = require("cors");  // 1. ADD CORS
 const app = express();
 
-// Middleware
+// ========== MIDDLEWARE ==========
+app.use(cors());  // 2. ENABLE CORS FOR ALL ROUTES
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -14,12 +16,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Database
+// ========== SERVE STATIC FILES ==========
+app.use(express.static('.'));  // 3. SERVE HTML, CSS, JS FROM CURRENT DIRECTORY
+
+// ========== DATABASE ==========
 console.log(" Initializing database...");
 require("./database");
 console.log("Database connected");
 
-// Routes
+// ========== API ROUTES ==========
 console.log("Loading routes...");
 app.use("/gov", require("./routes/rationRoutes"));
 app.use("/gov", require("./routes/scholarship10Routes"));
@@ -28,7 +33,7 @@ app.use("/gov", require("./routes/schemeRoutes"));
 app.use("/sync", require("./routes/syncRoutes"));
 console.log(" All routes loaded");
 
-// Root route
+// ========== ROOT ROUTE ==========
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -44,24 +49,46 @@ app.get("/", (req, res) => {
       middleware: {
         sync: { POST: "/sync/submit" }
       }
+    },
+    static_files: {
+      admin_dashboard: "http://localhost:4000/admin.html",
+      admin_login: "http://localhost:4000/admin-login.html",
+      user_forms: [
+        "http://localhost:4000/",
+        "http://localhost:4000/ration.html",
+        "http://localhost:4000/scholarship10.html",
+        "http://localhost:4000/scholarship12.html"
+      ]
     }
   });
 });
 
-// Health check
+// ========== HEALTH CHECK ==========
 app.get("/health", (req, res) => {
   res.json({ 
     status: "OK", 
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    services: {
+      api: "running",
+      database: "connected",
+      static_files: "serving",
+      cors: "enabled"
+    }
   });
 });
 
-// Error handlers
+// ========== ERROR HANDLERS ==========
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    error: `Route ${req.method} ${req.url} not found`
+    error: `Route ${req.method} ${req.url} not found`,
+    available_routes: {
+      api: "/",
+      health: "/health",
+      admin: "/admin.html",
+      forms: ["/", "/ration.html", "/scholarship10.html", "/scholarship12.html"]
+    }
   });
 });
 
@@ -70,19 +97,42 @@ app.use((err, req, res, next) => {
   res.status(500).json({
     success: false,
     error: "Internal server error",
-    message: err.message
+    message: err.message,
+    timestamp: new Date().toISOString()
   });
 });
 
-// Start server
+// ========== START SERVER ==========
 const PORT = 4000;
 app.listen(PORT, () => {
-  console.log("\n" + "=".repeat(50));
-  console.log(` SERVER RUNNING ON PORT ${PORT}`);
-  console.log(` http://localhost:${PORT}`);
-  console.log("=".repeat(50));
-  console.log("\n Test middleware:");
+  console.log("\n" + "=".repeat(60));
+  console.log(`  SERVER SUCCESSFULLY STARTED`);
+  console.log("=".repeat(60));
+  console.log(`  Port: ${PORT}`);
+  console.log(`  Base URL: http://localhost:${PORT}`);
+  console.log(`  CORS: Enabled (Allowing all origins)`);
+  console.log(`  Static Files: Serving from current directory`);
+  console.log("=".repeat(60));
+  console.log("\n  ADMIN DASHBOARD:");
+  console.log("    http://localhost:4000/admin.html");
+  console.log("    http://localhost:4000/admin-login.html");
+  
+  console.log("\n  USER FORMS:");
+  console.log("    Government Scheme: http://localhost:4000/");
+  console.log("    Ration Card: http://localhost:4000/ration.html");
+  console.log("    10th Scholarship: http://localhost:4000/scholarship10.html");
+  console.log("    12th Scholarship: http://localhost:4000/scholarship12.html");
+  
+  console.log("\n 🔧 API ENDPOINTS:");
+  console.log("   GET  http://localhost:4000/gov/ration");
+  console.log("   GET  http://localhost:4000/gov/scheme");
+  console.log("   GET  http://localhost:4000/gov/scholar10");
+  console.log("   GET  http://localhost:4000/gov/scholar12");
   console.log("   POST http://localhost:4000/sync/submit");
-  console.log("   Body: {\"service_type\":\"ration\",\"form_data\":{\"name\":\"...\",\"category\":\"SC\",\"ration_number\":\"...\",\"family_members\":3}}");
-  console.log("\n");
+  
+  console.log("\n 🩺 HEALTH CHECK:");
+  console.log("   GET  http://localhost:4000/health");
+  console.log("\n" + "=".repeat(60));
+  console.log(" Server is ready to accept connections!");
+  console.log("=".repeat(60) + "\n");
 });
