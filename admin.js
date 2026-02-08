@@ -22,19 +22,19 @@ const CONFIG = {
     const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
     
     if (!isLoggedIn) {
-        alert('⚠️ Access Denied\nPlease login first.');
+        alert(' Access Denied\nPlease login first.');
         window.location.href = 'admin-login.html';
         return; // Stop execution
     }
     
-    console.log('✅ Admin authenticated');
+    console.log('Admin authenticated');
 })();
 
 // ================= UTILITY FUNCTIONS =================
 class ApiService {
     static async fetchData(endpoint) {
         try {
-            console.log(`📡 Fetching: ${CONFIG.BASE_URL}${endpoint}`);
+            console.log(` Fetching: ${CONFIG.BASE_URL}${endpoint}`);
             const response = await fetch(`${CONFIG.BASE_URL}${endpoint}`);
             
             if (!response.ok) {
@@ -42,10 +42,10 @@ class ApiService {
             }
             
             const data = await response.json();
-            console.log(`✅ Loaded ${data.length || 0} items from ${endpoint}`);
+            console.log(`Loaded ${data.length || 0} items from ${endpoint}`);
             return data;
         } catch (error) {
-            console.error(`❌ Error fetching ${endpoint}:`, error);
+            console.error(` Error fetching ${endpoint}:`, error);
             this.showError(`Failed to load data from ${endpoint}`);
             return [];
         }
@@ -72,27 +72,27 @@ class ApiService {
             }
             
             const result = await response.json();
-            console.log(`✅ Status updated for ${applicationId}: ${status}`);
+            console.log(` Status updated for ${applicationId}: ${status}`);
             return result;
         } catch (error) {
-            console.error(`❌ Error updating status:`, error);
+            console.error(`Error updating status:`, error);
             this.showError(`Failed to update status: ${error.message}`);
             throw error;
         }
     }
     
     static showError(message) {
-        alert(`❌ Error\n${message}\n\nCheck console for details.`);
+        alert(` Error\n${message}\n\nCheck console for details.`);
     }
     
     static showSuccess(message) {
-        alert(`✅ Success\n${message}`);
+        alert(` Success\n${message}`);
     }
 }
 
 // ================= DATA LOADING FUNCTIONS =================
 async function loadAllData() {
-    console.log('🔄 Loading all dashboard data...');
+    console.log('Loading all dashboard data...');
     
     try {
         // Load all data in parallel
@@ -106,9 +106,9 @@ async function loadAllData() {
         // Update stats
         updateStats(rationData, schemeData, scholar10Data, scholar12Data);
         
-        console.log('✅ All data loaded successfully');
+        console.log(' All data loaded successfully');
     } catch (error) {
-        console.error('❌ Error loading data:', error);
+        console.error(' Error loading data:', error);
     }
 }
 
@@ -202,7 +202,7 @@ function renderRationRow(item, appType) {
                         </button>
                     ` : `
                         <span style="color: #7f8c8d; font-size: 12px;">
-                            ${status === 'APPROVED' ? '✅ Approved' : '❌ Rejected'}
+                            ${status === 'APPROVED' ? ' Approved' : 'Rejected'}
                         </span>
                     `}
                 </div>
@@ -231,7 +231,7 @@ function renderSchemeRow(item, appType) {
                         </button>
                     ` : `
                         <span style="color: #7f8c8d; font-size: 12px;">
-                            ${status === 'APPROVED' ? '✅ Approved' : '❌ Rejected'}
+                            ${status === 'APPROVED' ? 'Approved' : ' Rejected'}
                         </span>
                     `}
                 </div>
@@ -260,7 +260,7 @@ function renderScholar10Row(item, appType) {
                         </button>
                     ` : `
                         <span style="color: #7f8c8d; font-size: 12px;">
-                            ${status === 'APPROVED' ? '✅ Approved' : '❌ Rejected'}
+                            ${status === 'APPROVED' ? ' Approved' : 'Rejected'}
                         </span>
                     `}
                 </div>
@@ -289,7 +289,7 @@ function renderScholar12Row(item, appType) {
                         </button>
                     ` : `
                         <span style="color: #7f8c8d; font-size: 12px;">
-                            ${status === 'APPROVED' ? '✅ Approved' : '❌ Rejected'}
+                            ${status === 'APPROVED' ? ' Approved' : ' Rejected'}
                         </span>
                     `}
                 </div>
@@ -300,7 +300,7 @@ function renderScholar12Row(item, appType) {
 
 // ================= ACTION HANDLERS =================
 async function handleApprove(applicationId, appType) {
-    if (!confirm(`✅ Approve Application ${applicationId}?\n\nThis action cannot be undone.`)) {
+    if (!confirm(` Approve Application ${applicationId}?\n\nThis action cannot be undone.`)) {
         return;
     }
     
@@ -316,7 +316,7 @@ async function handleApprove(applicationId, appType) {
 }
 
 async function handleReject(applicationId, appType) {
-    if (!confirm(`❌ Reject Application ${applicationId}?\n\nThis action cannot be undone.`)) {
+    if (!confirm(`Reject Application ${applicationId}?\n\nThis action cannot be undone.`)) {
         return;
     }
     
@@ -401,7 +401,7 @@ function filterTable(tableId, query) {
 
 // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Admin Dashboard Initializing...');
+    console.log(' Admin Dashboard Initializing...');
     
     // Check authentication
     if (localStorage.getItem('adminLoggedIn') !== 'true') {
@@ -417,11 +417,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Auto-refresh every 30 seconds
     setInterval(() => {
-        console.log('🔄 Auto-refreshing data...');
+        console.log(' Auto-refreshing data...');
         loadAllData();
     }, 30000);
     
-    console.log('✅ Admin Dashboard Ready');
+    console.log('Admin Dashboard Ready');
 });
 
 // ================= GLOBAL EXPORTS =================
