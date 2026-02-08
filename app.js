@@ -1,78 +1,122 @@
-import { initDB, saveApplication } from "./db.js";
-import { syncApplications } from "./sync.js";
+import { initDB, saveApplication, getPendingSyncs, markSynced, updateSyncStatus } from "./db.js";
 
 await initDB();
 
+const form = document.getElementById("schemeForm");
 
-// Populate State dropdown
-const states = [
-    "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh",
-    "Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka",
-    "Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram",
-    "Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu",
-    "Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal"
-];
+// Sync function for scheme
+async function syncSchemeToBackend(formData, dbId = null) {
+    try {
+        const payload = {
+            service_type: "scheme",
+            form_data: {
+                name: formData.name,
+                category: formData.category,
+                state: formData.state,
+                scheme_type: formData.scheme_type,
+                timestamp: new Date().toISOString()
+            }
+        };
+        
+        console.log('Sending scheme sync request:', payload);
+        
+        const response = await fetch('http://localhost:4000/sync/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Scheme sync successful:', result);
+        
+        // Mark as synced in IndexedDB if we have a dbId
+        if (dbId && result.success) {
+            await markSynced(dbId, result);
+        }
+        
+        return { success: true, data: result };
+    } catch (error) {
+        console.error('Scheme sync failed:', error);
+        
+        // Update sync status to failed
+        if (dbId) {
+            await updateSyncStatus(dbId, "sync_failed", error);
+        }
+        
+        return { 
+            success: false, 
+            error: error.message,
+            dbId: dbId
+        };
+    }
+}
 
-const stateSelect = document.getElementById("state");
-states.forEach(state => {
-    const opt = document.createElement("option");
-    opt.value = state;
-    opt.textContent = state;
-    stateSelect.appendChild(opt);
+// Auto-retry pending syncs when coming online
+window.addEventListener('online', async () => {
+    console.log('Device is online. Checking for pending scheme syncs...');
+    
+    try {
+        const pendingSyncs = await getPendingSyncs();
+        const schemePending = pendingSyncs.filter(app => app.formType === "scheme");
+        console.log(`Found ${schemePending.length} pending scheme syncs`);
+        
+        for (const pending of schemePending) {
+            console.log('Retrying scheme sync for:', pending.id);
+            
+            const result = await syncSchemeToBackend(pending, pending.id);
+            
+            if (result.success) {
+                console.log('Successfully synced pending scheme application:', pending.id);
+            } else {
+                console.log('Failed to sync pending scheme application:', pending.id);
+            }
+        }
+    } catch (error) {
+        console.error('Error during auto-sync:', error);
+    }
 });
 
-const statusText = document.getElementById("offline-status");
-
-function updateStatus() {
-    if (navigator.onLine) {
-    statusText.textContent = "Online mode";
-    statusText.style.color = "green";
-} else {
-    statusText.textContent = "Offline mode – data will be saved locally";
-    statusText.style.color = "orange";
-}
-}
-
-window.addEventListener("online", updateStatus);
-window.addEventListener("offline", updateStatus);
-updateStatus();
-
-// Form submit handler
-const form = document.querySelector("form");
-form.addEventListener("submit", function (event) {
-    event.preventDefault();
-
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
     const data = {
         name: document.getElementById("name").value,
-        dob: document.getElementById("dob").value,
-        state: document.getElementById("state").value,
-        city: document.getElementById("city").value,
-        address: document.getElementById("address").value,
         category: document.getElementById("category").value,
-        income: document.getElementById("income").value
+        state: document.getElementById("state").value,
+        scheme_type: document.getElementById("scheme_type").value,
     };
 
-    saveApplication({
-    formType: "government",
-    ...data,
-    createdAt: new Date()
-}).then(() => {
-    alert(
-        navigator.onLine
-            ? "Form saved successfully."
-            : "Form saved locally. It will sync when internet is available."
-    );
-    form.reset();
-}).catch(() => {
-    console.log("Error storing data");
+    try {
+        // Save to IndexedDB first
+        const dbResult = await saveApplication({
+            formType: "scheme",
+            ...data,
+            status: "pending_sync",
+            createdAt: new Date()
+        });
+        
+        console.log('Saved to IndexedDB with ID:', dbResult.id);
+        
+        // Try to sync if online
+        if (navigator.onLine) {
+            const syncResult = await syncSchemeToBackend(data, dbResult.id);
+            
+            if (syncResult.success) {
+                alert(`Scheme application submitted successfully!\nApplication ID: ${syncResult.data.application_id}\nStatus: ${syncResult.data.status}`);
+            } else {
+                alert(`Scheme saved locally.\nWill automatically sync when possible.\nError: ${syncResult.error}`);
+            }
+        } else {
+            alert("Scheme saved offline.\nWill sync automatically when you're back online.");
+        }
+        
+        form.reset();
+    } catch (error) {
+        console.error('Error saving scheme data:', error);
+        alert(" Error saving scheme data");
+    }
 });
-});
-// Register Service Worker
-if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-        navigator.serviceWorker
-            .register("sw.js")
-            .then(() => console.log("Service Worker registered"))
-            .catch(err => console.error("Service Worker error:", err));
-    });
-}
