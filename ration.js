@@ -1,26 +1,24 @@
-import { initDB, saveApplication, getPendingSyncs, markSynced, updateSyncStatus } from "./db.js";
+import { initDB, saveApplication, getPendingSyncs, markSynced } from "./db.js";
 
 await initDB();
 
 const form = document.getElementById("rationForm");
 
-// Sync function for ration
-async function syncRationToBackend(formData, dbId = null) {
+// ================= DIRECT SUBMISSION =================
+async function submitRationToBackend(formData, dbId = null) {
     try {
         const payload = {
-            service_type: "ration",
-            form_data: {
-                name: formData.name,
-                category: formData.category,
-                ration_number: formData.ration_number,
-                family_members: formData.family_members,
-                timestamp: new Date().toISOString()
-            }
+            name: formData.name,
+            category: formData.category,
+            ration_number: formData.ration_number,
+            family_members: formData.family_members,
+            status: 'PENDING'
         };
         
-        console.log('Sending ration sync request:', payload);
+        console.log('Submitting ration:', payload);
         
-        const response = await fetch('http://localhost:4000/sync/submit', {
+        // TRY DIRECT ENDPOINT FIRST
+        const response = await fetch('http://localhost:4000/gov/ration', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -31,20 +29,42 @@ async function syncRationToBackend(formData, dbId = null) {
         }
         
         const result = await response.json();
-        console.log('Ration sync successful:', result);
+        console.log('Ration submitted successfully:', result);
         
-        // Mark as synced in IndexedDB if we have a dbId
         if (dbId && result.success) {
             await markSynced(dbId, result);
         }
         
         return { success: true, data: result };
-    } catch (error) {
-        console.error('Ration sync failed:', error);
         
-        // Update sync status to failed
-        if (dbId) {
-            await updateSyncStatus(dbId, "sync_failed", error);
+    } catch (error) {
+        console.error('Direct submission failed, trying sync endpoint:', error);
+        
+        // FALLBACK: Try sync endpoint
+        try {
+            const syncPayload = {
+                service_type: "ration",
+                form_data: formData
+            };
+            
+            const syncResponse = await fetch('http://localhost:4000/sync/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(syncPayload)
+            });
+            
+            if (syncResponse.ok) {
+                const syncResult = await syncResponse.json();
+                console.log('Ration sync successful:', syncResult);
+                
+                if (dbId && syncResult.success) {
+                    await markSynced(dbId, syncResult);
+                }
+                
+                return { success: true, data: syncResult };
+            }
+        } catch (syncError) {
+            console.error('Sync also failed:', syncError);
         }
         
         return { 
@@ -55,31 +75,7 @@ async function syncRationToBackend(formData, dbId = null) {
     }
 }
 
-// Auto-retry pending syncs when coming online
-window.addEventListener('online', async () => {
-    console.log('Device is online. Checking for pending ration syncs...');
-    
-    try {
-        const pendingSyncs = await getPendingSyncs();
-        const rationPending = pendingSyncs.filter(app => app.formType === "ration");
-        console.log(`Found ${rationPending.length} pending ration syncs`);
-        
-        for (const pending of rationPending) {
-            console.log('Retrying ration sync for:', pending.id);
-            
-            const result = await syncRationToBackend(pending, pending.id);
-            
-            if (result.success) {
-                console.log('Successfully synced pending ration application:', pending.id);
-            } else {
-                console.log('Failed to sync pending ration application:', pending.id);
-            }
-        }
-    } catch (error) {
-        console.error('Error during auto-sync:', error);
-    }
-});
-
+// ================= FORM SUBMISSION =================
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
     
@@ -87,7 +83,7 @@ form.addEventListener("submit", async (e) => {
         name: document.getElementById("name").value,
         category: document.getElementById("category").value,
         ration_number: document.getElementById("ration_number").value,
-        family_members: Number(document.getElementById("family_members").value),
+        family_members: Number(document.getElementById("family_members").value)
     };
 
     try {
@@ -101,22 +97,22 @@ form.addEventListener("submit", async (e) => {
         
         console.log('Saved to IndexedDB with ID:', dbResult.id);
         
-        // Try to sync if online
+        // Try to submit if online
         if (navigator.onLine) {
-            const syncResult = await syncRationToBackend(data, dbResult.id);
+            const result = await submitRationToBackend(data, dbResult.id);
             
-            if (syncResult.success) {
-                alert(`Ration card application submitted successfully!\nApplication ID: ${syncResult.data.application_id}\nStatus: ${syncResult.data.status}`);
+            if (result.success) {
+                alert(` Ration application submitted!`);
+                form.reset();
             } else {
-                alert(`Ration card saved locally.\nWill automatically sync when possible.\nError: ${syncResult.error}`);
+                alert(` Saved locally. Will sync later.`);
             }
         } else {
-            alert("Ration card saved offline.\nWill sync automatically when you're back online.");
+            alert("Saved offline. Will sync when online.");
         }
         
-        form.reset();
     } catch (error) {
-        console.error('Error saving ration data:', error);
-        alert("Error saving ration card data");
+        console.error('Error:', error);
+        alert(" Error saving application");
     }
 });
