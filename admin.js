@@ -1,521 +1,293 @@
-// ================= CONFIGURATION =================
+// ================= ADMIN.JS - OPTIMIZED FAST VERSION =================
+
+
 const CONFIG = {
     BASE_URL: "http://localhost:4000",
-    API_ENDPOINTS: {
+    ENDPOINTS: {
         RATION: "/gov/ration",
         SCHEME: "/gov/scheme",
         SCHOLAR10: "/gov/scholar10",
         SCHOLAR12: "/gov/scholar12",
-        UPDATE_STATUS: "/gov/application"
-    },
-    UPDATE_TYPES: {
-        RATION: 'ration',
-        SCHEME: 'scheme',
-        SCHOLAR10: 'scholar10',
-        SCHOLAR12: 'scholar12'
+        UPDATE: "/gov/application"
     }
 };
 
-// ================= AUTHENTICATION GUARD =================
-(function checkAuth() {
-    // Check if user is logged in
-    const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-    
-    if (!isLoggedIn) {
-        alert(' Access Denied\nPlease login first.');
+// ================= AUTH CHECK =================
+(function() {
+    if (localStorage.getItem('adminLoggedIn') !== 'true') {
         window.location.href = 'admin-login.html';
-        return; // Stop execution
     }
-    
-    console.log('Admin authenticated');
 })();
 
-// ================= UTILITY FUNCTIONS =================
-class ApiService {
-    static async fetchData(endpoint) {
-        try {
-            console.log(` Fetching: ${CONFIG.BASE_URL}${endpoint}`);
-            const response = await fetch(`${CONFIG.BASE_URL}${endpoint}`);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+// ================= SHOW LOADING STATE =================
+function showLoading() {
+    // Show loading in all tables
+    ['rationTable', 'schemeTable', 'scholar10Table', 'scholar12Table'].forEach(tableId => {
+        const table = document.getElementById(tableId);
+        if (table) {
+            const tbody = table.querySelector('tbody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#666;">🔄 Loading...</td></tr>';
             }
-            
-            const result = await response.json();
-            console.log(` Raw response from ${endpoint}:`, result);
-            
-            // ================= FIXED DATA EXTRACTION =================
-            // Handle ANY response format from all your APIs
-            let dataArray;
-            
-            if (Array.isArray(result)) {
-                // Case 1: Already an array (ration endpoint)
-                dataArray = result;
-                console.log(` Got array with ${dataArray.length} items`);
-            } 
-            else if (result.data && Array.isArray(result.data)) {
-                // Case 2: {data: [...]} format
-                dataArray = result.data;
-                console.log(` Extracted ${dataArray.length} items from result.data`);
-            } 
-            else if (result.success && Array.isArray(result.data)) {
-                // Case 3: {success: true, data: [...]} format
-                dataArray = result.data;
-                console.log(` Extracted ${dataArray.length} items from success.data`);
-            } 
-            else if (result.count !== undefined && Array.isArray(result.data)) {
-                // Case 4: {count: X, data: [...]} format
-                dataArray = result.data;
-                console.log(`Extracted ${dataArray.length} items from count.data`);
-            } 
-            else if (result && typeof result === 'object' && !Array.isArray(result)) {
-                // Case 5: Single object (wrap in array)
-                dataArray = [result];
-                console.log(`Wrapped single object into array`);
-            } 
-            else {
-                // Case 6: Unknown format, return empty array
-                console.warn(` Unknown response format from ${endpoint}, returning empty array`);
-                dataArray = [];
-            }
-            // ================= END FIX =================
-            
-            console.log(` Total items loaded from ${endpoint}: ${dataArray.length}`);
-            return dataArray;
-            
-        } catch (error) {
-            console.error(` Error fetching ${endpoint}:`, error);
-            this.showError(`Failed to load data from ${endpoint}\n${error.message}`);
-            return [];
         }
-    }
+    });
     
-    static async updateStatus(applicationId, status, appType) {
-        try {
-            const response = await fetch(
-                `${CONFIG.BASE_URL}${CONFIG.API_ENDPOINTS.UPDATE_STATUS}/${applicationId}`,
-                {
-                    method: "PATCH",
-                    headers: { 
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ 
-                        status: status.toUpperCase(),
-                        appType: appType 
-                    })
-                }
-            );
-            
-            if (!response.ok) {
-                throw new Error(`Update failed: HTTP ${response.status}`);
-            }
-            
-            const result = await response.json();
-            console.log(` Status updated for ${applicationId}: ${status}`);
-            return result;
-        } catch (error) {
-            console.error(`Error updating status:`, error);
-            this.showError(`Failed to update status: ${error.message}`);
-            throw error;
-        }
-    }
-    
-    static showError(message) {
-        alert(` Error\n${message}\n\nCheck console for details.`);
-    }
-    
-    static showSuccess(message) {
-        alert(` Success\n${message}`);
-    }
+    // Update stats to 0 initially
+    ['rationCount', 'schemeCount', 'scholar10Count', 'scholar12Count'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '0';
+    });
 }
 
-// ================= DATA LOADING FUNCTIONS =================
-async function loadAllData() {
-    console.log(' Loading all dashboard data...');
+// ================= FAST DATA LOADING =================
+async function loadAllDataFast() {
+    console.time('DataLoadTime'); // Start timer
+    
+    showLoading(); // Show loading immediately
     
     try {
-        // Load all data in parallel
+        // Load ALL data in parallel (not sequentially)
         const [rationData, schemeData, scholar10Data, scholar12Data] = await Promise.all([
-            loadRation(),
-            loadScheme(),
-            loadScholar10(),
-            loadScholar12()
+            fetchDataFast(CONFIG.ENDPOINTS.RATION),
+            fetchDataFast(CONFIG.ENDPOINTS.SCHEME),
+            fetchDataFast(CONFIG.ENDPOINTS.SCHOLAR10),
+            fetchDataFast(CONFIG.ENDPOINTS.SCHOLAR12)
+        ]);
+        
+        // Render ALL tables in parallel
+        await Promise.all([
+            renderTableFast('rationTable', rationData, 'ration'),
+            renderTableFast('schemeTable', schemeData, 'scheme'),
+            renderTableFast('scholar10Table', scholar10Data, 'scholar10'),
+            renderTableFast('scholar12Table', scholar12Data, 'scholar12')
         ]);
         
         // Update stats
-        updateStats(rationData, schemeData, scholar10Data, scholar12Data);
+        updateStatsFast(rationData, schemeData, scholar10Data, scholar12Data);
         
-        console.log(' All data loaded successfully');
+        console.timeEnd('DataLoadTime'); // End timer
+        console.log(` Loaded: ${rationData.length} ration, ${schemeData.length} scheme, ${scholar10Data.length} scholar10, ${scholar12Data.length} scholar12`);
+        
     } catch (error) {
-        console.error(' Error loading data:', error);
+        console.error(' Load error:', error);
+        showError('Failed to load data');
     }
 }
 
-function updateStats(rationData, schemeData, scholar10Data, scholar12Data) {
-    console.log(' Updating stats with:');
-    console.log('- Ration:', rationData.length, 'items');
-    console.log('- Scheme:', schemeData.length, 'items');
-    console.log('- Scholar10:', scholar10Data.length, 'items');
-    console.log('- Scholar12:', scholar12Data.length, 'items');
-    
-    document.getElementById('rationCount').textContent = rationData.length || 0;
-    document.getElementById('schemeCount').textContent = schemeData.length || 0;
-    document.getElementById('scholar10Count').textContent = scholar10Data.length || 0;
-    document.getElementById('scholar12Count').textContent = scholar12Data.length || 0;
-    
-    // Update colors based on count
-    updateStatColor('rationCount', rationData.length);
-    updateStatColor('schemeCount', schemeData.length);
-    updateStatColor('scholar10Count', scholar10Data.length);
-    updateStatColor('scholar12Count', scholar12Data.length);
-    
-    console.log(' Stats updated in HTML');
-}
-
-function updateStatColor(elementId, count) {
-    const element = document.getElementById(elementId);
-    if (!element) {
-        console.warn(`Element ${elementId} not found!`);
-        return;
-    }
-    
-    if (count === 0) {
-        element.style.color = '#95a5a6';
-    } else if (count > 10) {
-        element.style.color = '#e74c3c';
-    } else {
-        element.style.color = '#2c3e50';
-    }
-}
-
-// ================= APPLICATION SPECIFIC LOADERS =================
-async function loadRation() {
-    console.log(' Loading ration data...');
-    const data = await ApiService.fetchData(CONFIG.API_ENDPOINTS.RATION);
-    renderTable('rationTable', data, CONFIG.UPDATE_TYPES.RATION, renderRationRow);
-    return data;
-}
-
-async function loadScheme() {
-    console.log(' Loading scheme data...');
-    const data = await ApiService.fetchData(CONFIG.API_ENDPOINTS.SCHEME);
-    renderTable('schemeTable', data, CONFIG.UPDATE_TYPES.SCHEME, renderSchemeRow);
-    return data;
-}
-
-async function loadScholar10() {
-    console.log(' Loading scholar10 data...');
-    const data = await ApiService.fetchData(CONFIG.API_ENDPOINTS.SCHOLAR10);
-    renderTable('scholar10Table', data, CONFIG.UPDATE_TYPES.SCHOLAR10, renderScholar10Row);
-    return data;
-}
-
-async function loadScholar12() {
-    console.log('Loading scholar12 data...');
-    const data = await ApiService.fetchData(CONFIG.API_ENDPOINTS.SCHOLAR12);
-    renderTable('scholar12Table', data, CONFIG.UPDATE_TYPES.SCHOLAR12, renderScholar12Row);
-    return data;
-}
-
-// ================= TABLE RENDER FUNCTIONS =================
-function renderTable(tableId, data, appType, rowRenderer) {
-    console.log(` Rendering table ${tableId} with ${data.length} items`);
-    
-    const tbody = document.querySelector(`#${tableId} tbody`);
-    if (!tbody) {
-        console.error(`Table body not found for #${tableId}`);
-        return;
-    }
-    
-    if (!data || data.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" style="text-align: center; padding: 40px; color: #7f8c8d;">
-                    📭 No applications found
-                </td>
-            </tr>
-        `;
-        console.log(`📭 No data for ${tableId}`);
-        return;
-    }
-    
-    tbody.innerHTML = '';
-    data.forEach((item, index) => {
-        tbody.innerHTML += rowRenderer(item, appType);
-    });
-    
-    console.log(` Rendered ${data.length} rows in ${tableId}`);
-}
-
-function renderRationRow(item, appType) {
-    const status = item.status || 'PENDING';
-    const appId = item.applicationId || item.id || 'N/A';
-    return `
-        <tr>
-            <td><strong>${appId}</strong></td>
-            <td>${item.name || 'N/A'}</td>
-            <td>${item.category || 'N/A'}</td>
-            <td>${item.family_members || item.familyMembers || 'N/A'}</td>
-            <td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td>
-            <td>
-                <div class="action-buttons">
-                    ${status === 'PENDING' ? `
-                        <button class="btn-approve" onclick="handleApprove('${appId}', '${appType}')">
-                            Approve
-                        </button>
-                        <button class="btn-reject" onclick="handleReject('${appId}', '${appType}')">
-                            Reject
-                        </button>
-                    ` : `
-                        <span style="color: #7f8c8d; font-size: 12px;">
-                            ${status === 'APPROVED' ? ' Approved' : 'Rejected'}
-                        </span>
-                    `}
-                </div>
-            </td>
-        </tr>
-    `;
-}
-
-function renderSchemeRow(item, appType) {
-    const status = item.status || 'PENDING';
-    const appId = item.applicationId || item.id || 'N/A';
-    return `
-        <tr>
-            <td><strong>${appId}</strong></td>
-            <td>${item.name || 'N/A'}</td>
-            <td>${item.category || 'N/A'}</td>
-            <td>${item.state || 'N/A'}</td>
-            <td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td>
-            <td>
-                <div class="action-buttons">
-                    ${status === 'PENDING' ? `
-                        <button class="btn-approve" onclick="handleApprove('${appId}', '${appType}')">
-                            Approve
-                        </button>
-                        <button class="btn-reject" onclick="handleReject('${appId}', '${appType}')">
-                            Reject
-                        </button>
-                    ` : `
-                        <span style="color: #7f8c8d; font-size: 12px;">
-                            ${status === 'APPROVED' ? 'Approved' : ' Rejected'}
-                        </span>
-                    `}
-                </div>
-            </td>
-        </tr>
-    `;
-}
-
-function renderScholar10Row(item, appType) {
-    const status = item.status || 'PENDING';
-    const appId = item.applicationId || item.id || 'N/A';
-    return `
-        <tr>
-            <td><strong>${appId}</strong></td>
-            <td>${item.name || 'N/A'}</td>
-            <td>${item.school || 'N/A'}</td>
-            <td>${item.marks || 'N/A'}</td>
-            <td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td>
-            <td>
-                <div class="action-buttons">
-                    ${status === 'PENDING' ? `
-                        <button class="btn-approve" onclick="handleApprove('${appId}', '${appType}')">
-                            Approve
-                        </button>
-                        <button class="btn-reject" onclick="handleReject('${appId}', '${appType}')">
-                            Reject
-                        </button>
-                    ` : `
-                        <span style="color: #7f8c8d; font-size: 12px;">
-                            ${status === 'APPROVED' ? ' Approved' : ' Rejected'}
-                        </span>
-                    `}
-                </div>
-            </td>
-        </tr>
-    `;
-}
-
-function renderScholar12Row(item, appType) {
-    const status = item.status || 'PENDING';
-    const appId = item.applicationId || item.id || 'N/A';
-    return `
-        <tr>
-            <td><strong>${appId}</strong></td>
-            <td>${item.name || 'N/A'}</td>
-            <td>${item.college || 'N/A'}</td>
-            <td>${item.marks || 'N/A'}</td>
-            <td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td>
-            <td>
-                <div class="action-buttons">
-                    ${status === 'PENDING' ? `
-                        <button class="btn-approve" onclick="handleApprove('${appId}', '${appType}')">
-                            Approve
-                        </button>
-                        <button class="btn-reject" onclick="handleReject('${appId}', '${appType}')">
-                            Reject
-                        </button>
-                    ` : `
-                        <span style="color: #7f8c8d; font-size: 12px;">
-                            ${status === 'APPROVED' ? ' Approved' : ' Rejected'}
-                        </span>
-                    `}
-                </div>
-            </td>
-        </tr>
-    `;
-}
-
-// ================= ACTION HANDLERS =================
-async function handleApprove(applicationId, appType) {
-    if (!confirm(` Approve Application ${applicationId}?\n\nThis action cannot be undone.`)) {
-        return;
-    }
-    
+// ================= OPTIMIZED FETCH =================
+async function fetchDataFast(endpoint) {
     try {
-        await ApiService.updateStatus(applicationId, 'APPROVED', appType);
-        ApiService.showSuccess(`Application ${applicationId} approved successfully!`);
+        const response = await fetch(`${CONFIG.BASE_URL}${endpoint}`, {
+            // Timeout after 5 seconds
+            signal: AbortSignal.timeout(5000)
+        });
         
-        // Reload only the specific table
-        await reloadSpecificTable(appType);
+        if (!response.ok) return [];
+        
+        const data = await response.json();
+        
+        // Quick data extraction
+        if (Array.isArray(data)) return data;
+        if (data?.data && Array.isArray(data.data)) return data.data;
+        if (data?.success && data.data) return data.data;
+        
+        return [];
+        
     } catch (error) {
-        console.error('Approval failed:', error);
+        console.warn(` Failed to fetch ${endpoint}:`, error);
+        return []; // Return empty array on error
     }
 }
 
-async function handleReject(applicationId, appType) {
-    if (!confirm(` Reject Application ${applicationId}?\n\nThis action cannot be undone.`)) {
-        return;
-    }
-    
-    try {
-        await ApiService.updateStatus(applicationId, 'REJECTED', appType);
-        ApiService.showSuccess(`Application ${applicationId} rejected.`);
-        
-        // Reload only the specific table
-        await reloadSpecificTable(appType);
-    } catch (error) {
-        console.error('Rejection failed:', error);
-    }
-}
-
-async function reloadSpecificTable(appType) {
-    console.log(` Reloading ${appType} table...`);
-    switch (appType) {
-        case CONFIG.UPDATE_TYPES.RATION:
-            await loadRation();
-            break;
-        case CONFIG.UPDATE_TYPES.SCHEME:
-            await loadScheme();
-            break;
-        case CONFIG.UPDATE_TYPES.SCHOLAR10:
-            await loadScholar10();
-            break;
-        case CONFIG.UPDATE_TYPES.SCHOLAR12:
-            await loadScholar12();
-            break;
-    }
-}
-
-// ================= SEARCH FUNCTIONALITY =================
-function setupSearch() {
-    const searchInput = document.getElementById('searchInput');
-    if (!searchInput) {
-        console.warn(' Search input not found');
-        return;
-    }
-    
-    searchInput.addEventListener('input', function() {
-        const query = this.value.toLowerCase().trim();
-        filterAllTables(query);
+// ================= OPTIMIZED RENDER =================
+function renderTableFast(tableId, data, appType) {
+    return new Promise(resolve => {
+        // Use setTimeout to avoid blocking UI
+        setTimeout(() => {
+            const table = document.getElementById(tableId);
+            if (!table) {
+                resolve();
+                return;
+            }
+            
+            const tbody = table.querySelector('tbody');
+            if (!tbody) {
+                resolve();
+                return;
+            }
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#999;">📭 No applications</td></tr>';
+                resolve();
+                return;
+            }
+            
+            // Fast string concatenation
+            let html = '';
+            for (const item of data) {
+                const status = item.status || 'PENDING';
+                const appId = item.id || item.applicationId || 'N/A';
+                
+                html += `
+                <tr>
+                    <td><strong>${appId}</strong></td>
+                    <td>${item.name || 'N/A'}</td>
+                    <td>${getTableCell(item, appType, 1)}</td>
+                    <td>${getTableCell(item, appType, 2)}</td>
+                    <td>
+                        <span style="color: ${status === 'APPROVED' ? 'green' : status === 'REJECTED' ? 'red' : 'orange'}; font-weight:bold;">
+                            ${status}
+                        </span>
+                    </td>
+                    <td>
+                        ${status === 'PENDING' ? `
+                            <button onclick="approveFast('${appId}', '${appType}')" 
+                                    style="background:green;color:white;border:none;padding:4px 8px;border-radius:3px;margin-right:4px;cursor:pointer;font-size:12px;">
+                                
+                            </button>
+                            <button onclick="rejectFast('${appId}', '${appType}')" 
+                                    style="background:red;color:white;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:12px;">
+                                
+                            </button>
+                        ` : `
+                            <span style="color:#666;font-size:12px;">
+                                ${status === 'APPROVED' ? '✓ Done' : '✗ Done'}
+                            </span>
+                        `}
+                    </td>
+                </tr>`;
+            }
+            
+            tbody.innerHTML = html;
+            resolve();
+        }, 0); // Minimal delay
     });
+}
+
+// ================= HELPER: GET TABLE CELL CONTENT =================
+function getTableCell(item, appType, cellIndex) {
+    switch(appType) {
+        case 'ration':
+            return cellIndex === 1 ? (item.category || 'N/A') : (item.family_members || item.familyMembers || 'N/A');
+        case 'scheme':
+            return cellIndex === 1 ? (item.category || 'N/A') : (item.state || 'N/A');
+        case 'scholar10':
+            return cellIndex === 1 ? (item.school || 'N/A') : (item.marks || 'N/A');
+        case 'scholar12':
+            return cellIndex === 1 ? (item.college || 'N/A') : (item.marks || 'N/A');
+        default:
+            return 'N/A';
+    }
+}
+
+// ================= FAST STATS UPDATE =================
+function updateStatsFast(ration, scheme, scholar10, scholar12) {
+    const stats = {
+        'rationCount': ration.length,
+        'schemeCount': scheme.length,
+        'scholar10Count': scholar10.length,
+        'scholar12Count': scholar12.length
+    };
     
-    // Add keyboard shortcut
-    document.addEventListener('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-            e.preventDefault();
-            searchInput.focus();
-            searchInput.select();
+    for (const [id, count] of Object.entries(stats)) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = count;
+            el.style.color = count > 0 ? '#2c3e50' : '#95a5a6';
         }
-        
-        // ESC to clear search
-        if (e.key === 'Escape' && document.activeElement === searchInput) {
-            searchInput.value = '';
-            filterAllTables('');
-        }
-    });
+    }
 }
 
-function filterAllTables(query) {
-    const tables = [
-        'rationTable',
-        'schemeTable',
-        'scholar10Table',
-        'scholar12Table'
-    ];
+// ================= FAST APPROVE/REJECT =================
+async function approveFast(appId, appType) {
+    if (!confirm(`Approve #${appId}?`)) return;
     
-    tables.forEach(tableId => {
-        filterTable(tableId, query);
-    });
+    await updateStatusFast(appId, appType, 'APPROVED');
 }
 
-function filterTable(tableId, query) {
+async function rejectFast(appId, appType) {
+    if (!confirm(`Reject #${appId}?`)) return;
+    
+    await updateStatusFast(appId, appType, 'REJECTED');
+}
+
+async function updateStatusFast(appId, appType, newStatus) {
+    const tableId = appType + 'Table';
     const table = document.getElementById(tableId);
-    if (!table) {
-        console.warn(` Table ${tableId} not found for filtering`);
-        return;
+    if (!table) return;
+    
+    // Find and update row immediately
+    const rows = table.querySelectorAll('tbody tr');
+    for (const row of rows) {
+        const idCell = row.querySelector('td:first-child strong');
+        if (idCell && idCell.textContent === appId) {
+            // Update status cell
+            const statusCell = row.querySelector('td:nth-child(5) span');
+            if (statusCell) {
+                statusCell.textContent = newStatus;
+                statusCell.style.color = newStatus === 'APPROVED' ? 'green' : 'red';
+            }
+            
+            // Update action buttons
+            const actionCell = row.querySelector('td:last-child');
+            if (actionCell) {
+                actionCell.innerHTML = `<span style="color:#666;font-size:12px;">${newStatus === 'APPROVED' ? '✓ Done' : '✗ Done'}</span>`;
+            }
+            
+            break;
+        }
     }
     
-    const rows = table.querySelectorAll('tbody tr');
-    let visibleCount = 0;
+    // Send to backend (don't wait for response to update UI)
+    fetch(`${CONFIG.BASE_URL}${CONFIG.ENDPOINTS.UPDATE}/${appId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus, appType: appType })
+    })
+    .then(response => {
+        if (!response.ok) {
+            console.error('Backend update failed');
+            // Could revert here if needed
+        }
+    })
+    .catch(error => console.error('Network error:', error));
     
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        const isVisible = !query || text.includes(query);
-        row.style.display = isVisible ? '' : 'none';
-        if (isVisible) visibleCount++;
-    });
-    
-    console.log(`Filtered ${tableId}: ${visibleCount}/${rows.length} rows visible`);
+    alert(`Application ${appId} ${newStatus.toLowerCase()}ed!`);
 }
 
-// ================= INITIALIZATION =================
+// ================= ERROR HANDLING =================
+function showError(message) {
+    // Update all tables with error message
+    ['rationTable', 'schemeTable', 'scholar10Table', 'scholar12Table'].forEach(tableId => {
+        const table = document.getElementById(tableId);
+        if (table) {
+            const tbody = table.querySelector('tbody');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:#e74c3c;">⚠️ ${message}</td></tr>`;
+            }
+        }
+    });
+}
+
+// ================= INITIALIZE =================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log(' Admin Dashboard Initializing...');
+    if (localStorage.getItem('adminLoggedIn') !== 'true') return;
     
-    // Check authentication
-    if (localStorage.getItem('adminLoggedIn') !== 'true') {
-        window.location.href = 'admin-login.html';
-        return;
+    console.log(' Starting FAST load...');
+    
+    // Load data immediately
+    loadAllDataFast();
+    
+    // Add refresh button handler if exists
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) {
+        refreshBtn.onclick = loadAllDataFast;
     }
-    
-    // Setup search
-    setupSearch();
-    
-    // Load all data
-    loadAllData();
-    
-    // Auto-refresh every 30 seconds
-    setInterval(() => {
-        console.log(' Auto-refreshing data...');
-        loadAllData();
-    }, 30000);
-    
-    console.log('Admin Dashboard Ready');
 });
 
-// ================= GLOBAL EXPORTS =================
-// Make functions available globally for onclick handlers
-window.handleApprove = handleApprove;
-window.handleReject = handleReject;
-window.loadAllData = loadAllData; // Add this for manual refresh
-window.logout = function() {
-    if (confirm('Are you sure you want to logout?')) {
-        localStorage.removeItem('adminLoggedIn');
-        localStorage.removeItem('loginTime');
-        window.location.href = 'admin-login.html';
-    }
-};
+// ================= GLOBAL FUNCTIONS =================
+window.approveFast = approveFast;
+window.rejectFast = rejectFast;
+window.loadAllDataFast = loadAllDataFast;
 
-console.log(' admin.js loaded successfully');
+console.log(' Ultra-fast Admin.js loaded!');
