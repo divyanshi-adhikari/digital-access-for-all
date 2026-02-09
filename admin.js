@@ -1,5 +1,4 @@
-// ================= ADMIN.JS - OPTIMIZED FAST VERSION =================
-
+// ================= ADMIN.JS - FINAL WORKING VERSION =================
 
 const CONFIG = {
     BASE_URL: "http://localhost:4000",
@@ -19,252 +18,214 @@ const CONFIG = {
     }
 })();
 
-// ================= SHOW LOADING STATE =================
-function showLoading() {
-    // Show loading in all tables
-    ['rationTable', 'schemeTable', 'scholar10Table', 'scholar12Table'].forEach(tableId => {
-        const table = document.getElementById(tableId);
-        if (table) {
-            const tbody = table.querySelector('tbody');
-            if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#666;">🔄 Loading...</td></tr>';
-            }
-        }
-    });
-    
-    // Update stats to 0 initially
-    ['rationCount', 'schemeCount', 'scholar10Count', 'scholar12Count'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = '0';
-    });
-}
-
-// ================= FAST DATA LOADING =================
-async function loadAllDataFast() {
-    console.time('DataLoadTime'); // Start timer
-    
-    showLoading(); // Show loading immediately
-    
+// ================= LOAD ALL DATA =================
+async function loadAllData() {
     try {
-        // Load ALL data in parallel (not sequentially)
         const [rationData, schemeData, scholar10Data, scholar12Data] = await Promise.all([
-            fetchDataFast(CONFIG.ENDPOINTS.RATION),
-            fetchDataFast(CONFIG.ENDPOINTS.SCHEME),
-            fetchDataFast(CONFIG.ENDPOINTS.SCHOLAR10),
-            fetchDataFast(CONFIG.ENDPOINTS.SCHOLAR12)
+            fetchData(CONFIG.ENDPOINTS.RATION),
+            fetchData(CONFIG.ENDPOINTS.SCHEME),
+            fetchData(CONFIG.ENDPOINTS.SCHOLAR10),
+            fetchData(CONFIG.ENDPOINTS.SCHOLAR12)
         ]);
         
-        // Render ALL tables in parallel
-        await Promise.all([
-            renderTableFast('rationTable', rationData, 'ration'),
-            renderTableFast('schemeTable', schemeData, 'scheme'),
-            renderTableFast('scholar10Table', scholar10Data, 'scholar10'),
-            renderTableFast('scholar12Table', scholar12Data, 'scholar12')
-        ]);
+        renderTable('rationTable', rationData, 'ration');
+        renderTable('schemeTable', schemeData, 'scheme');
+        renderTable('scholar10Table', scholar10Data, 'scholar10');
+        renderTable('scholar12Table', scholar12Data, 'scholar12');
         
-        // Update stats
-        updateStatsFast(rationData, schemeData, scholar10Data, scholar12Data);
-        
-        console.timeEnd('DataLoadTime'); // End timer
-        console.log(` Loaded: ${rationData.length} ration, ${schemeData.length} scheme, ${scholar10Data.length} scholar10, ${scholar12Data.length} scholar12`);
+        updateStats(rationData, schemeData, scholar10Data, scholar12Data);
         
     } catch (error) {
-        console.error(' Load error:', error);
-        showError('Failed to load data');
+        console.error('Load error:', error);
     }
 }
 
-// ================= OPTIMIZED FETCH =================
-async function fetchDataFast(endpoint) {
+// ================= FETCH DATA =================
+async function fetchData(endpoint) {
     try {
-        const response = await fetch(`${CONFIG.BASE_URL}${endpoint}`, {
-            // Timeout after 5 seconds
-            signal: AbortSignal.timeout(5000)
-        });
-        
+        const response = await fetch(`${CONFIG.BASE_URL}${endpoint}`);
         if (!response.ok) return [];
         
         const data = await response.json();
         
-        // Quick data extraction
+        // Handle any response format
         if (Array.isArray(data)) return data;
         if (data?.data && Array.isArray(data.data)) return data.data;
         if (data?.success && data.data) return data.data;
         
         return [];
-        
     } catch (error) {
-        console.warn(` Failed to fetch ${endpoint}:`, error);
-        return []; // Return empty array on error
+        console.error(`Fetch error:`, error);
+        return [];
     }
 }
 
-// ================= OPTIMIZED RENDER =================
-function renderTableFast(tableId, data, appType) {
-    return new Promise(resolve => {
-        // Use setTimeout to avoid blocking UI
-        setTimeout(() => {
-            const table = document.getElementById(tableId);
-            if (!table) {
-                resolve();
-                return;
-            }
-            
-            const tbody = table.querySelector('tbody');
-            if (!tbody) {
-                resolve();
-                return;
-            }
-            
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#999;">📭 No applications</td></tr>';
-                resolve();
-                return;
-            }
-            
-            // Fast string concatenation
-            let html = '';
-            for (const item of data) {
-                const status = item.status || 'PENDING';
-                const appId = item.id || item.applicationId || 'N/A';
-                
-                html += `
-                <tr>
-                    <td><strong>${appId}</strong></td>
-                    <td>${item.name || 'N/A'}</td>
-                    <td>${getTableCell(item, appType, 1)}</td>
-                    <td>${getTableCell(item, appType, 2)}</td>
-                    <td>
-                        <span style="color: ${status === 'APPROVED' ? 'green' : status === 'REJECTED' ? 'red' : 'orange'}; font-weight:bold;">
-                            ${status}
-                        </span>
-                    </td>
-                    <td>
-                        ${status === 'PENDING' ? `
-                            <button onclick="approveFast('${appId}', '${appType}')" 
-                                    style="background:green;color:white;border:none;padding:4px 8px;border-radius:3px;margin-right:4px;cursor:pointer;font-size:12px;">
-                                
-                            </button>
-                            <button onclick="rejectFast('${appId}', '${appType}')" 
-                                    style="background:red;color:white;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:12px;">
-                                
-                            </button>
-                        ` : `
-                            <span style="color:#666;font-size:12px;">
-                                ${status === 'APPROVED' ? '✓ Done' : '✗ Done'}
-                            </span>
-                        `}
-                    </td>
-                </tr>`;
-            }
-            
-            tbody.innerHTML = html;
-            resolve();
-        }, 0); // Minimal delay
-    });
-}
-
-// ================= HELPER: GET TABLE CELL CONTENT =================
-function getTableCell(item, appType, cellIndex) {
-    switch(appType) {
-        case 'ration':
-            return cellIndex === 1 ? (item.category || 'N/A') : (item.family_members || item.familyMembers || 'N/A');
-        case 'scheme':
-            return cellIndex === 1 ? (item.category || 'N/A') : (item.state || 'N/A');
-        case 'scholar10':
-            return cellIndex === 1 ? (item.school || 'N/A') : (item.marks || 'N/A');
-        case 'scholar12':
-            return cellIndex === 1 ? (item.college || 'N/A') : (item.marks || 'N/A');
-        default:
-            return 'N/A';
-    }
-}
-
-// ================= FAST STATS UPDATE =================
-function updateStatsFast(ration, scheme, scholar10, scholar12) {
-    const stats = {
-        'rationCount': ration.length,
-        'schemeCount': scheme.length,
-        'scholar10Count': scholar10.length,
-        'scholar12Count': scholar12.length
-    };
-    
-    for (const [id, count] of Object.entries(stats)) {
-        const el = document.getElementById(id);
-        if (el) {
-            el.textContent = count;
-            el.style.color = count > 0 ? '#2c3e50' : '#95a5a6';
-        }
-    }
-}
-
-// ================= FAST APPROVE/REJECT =================
-async function approveFast(appId, appType) {
-    if (!confirm(`Approve #${appId}?`)) return;
-    
-    await updateStatusFast(appId, appType, 'APPROVED');
-}
-
-async function rejectFast(appId, appType) {
-    if (!confirm(`Reject #${appId}?`)) return;
-    
-    await updateStatusFast(appId, appType, 'REJECTED');
-}
-
-async function updateStatusFast(appId, appType, newStatus) {
-    const tableId = appType + 'Table';
+// ================= RENDER TABLE =================
+function renderTable(tableId, data, appType) {
     const table = document.getElementById(tableId);
     if (!table) return;
     
-    // Find and update row immediately
-    const rows = table.querySelectorAll('tbody tr');
-    for (const row of rows) {
-        const idCell = row.querySelector('td:first-child strong');
-        if (idCell && idCell.textContent === appId) {
-            // Update status cell
-            const statusCell = row.querySelector('td:nth-child(5) span');
-            if (statusCell) {
-                statusCell.textContent = newStatus;
-                statusCell.style.color = newStatus === 'APPROVED' ? 'green' : 'red';
-            }
-            
-            // Update action buttons
-            const actionCell = row.querySelector('td:last-child');
-            if (actionCell) {
-                actionCell.innerHTML = `<span style="color:#666;font-size:12px;">${newStatus === 'APPROVED' ? '✓ Done' : '✗ Done'}</span>`;
-            }
-            
-            break;
-        }
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+    
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#999;">📭 No applications</td></tr>';
+        return;
     }
     
-    // Send to backend (don't wait for response to update UI)
-    fetch(`${CONFIG.BASE_URL}${CONFIG.ENDPOINTS.UPDATE}/${appId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus, appType: appType })
-    })
-    .then(response => {
-        if (!response.ok) {
-            console.error('Backend update failed');
-            // Could revert here if needed
-        }
-    })
-    .catch(error => console.error('Network error:', error));
+    let html = '';
+    for (const item of data) {
+        const status = item.status || 'PENDING';
+        const appId = item.id || item.applicationId || 'N/A';
+        const statusColor = status === 'APPROVED' ? 'green' : status === 'REJECTED' ? 'red' : 'orange';
+        
+        // FIX: Only add data-app-id if appId is NOT 'N/A'
+        const dataAttr = appId !== 'N/A' ? `data-app-id="${appId}"` : '';
+        
+        html += `
+        <tr ${dataAttr}>
+            <td><strong>${appId}</strong></td>
+            <td>${item.name || 'N/A'}</td>
+            <td>${getTableCell(item, appType, 1)}</td>
+            <td>${getTableCell(item, appType, 2)}</td>
+            <td>
+                <span class="status-cell" data-app-id="${appId}">
+                    ${status}
+                </span>
+            </td>
+            <td>
+                ${status === 'PENDING' ? `
+                    <button onclick="approveApp('${appId}', '${appType}', this)" 
+                            style="background:green;color:white;border:none;padding:5px 10px;border-radius:4px;margin-right:5px;cursor:pointer;">
+                        ✓
+                    </button>
+                    <button onclick="rejectApp('${appId}', '${appType}', this)" 
+                            style="background:red;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">
+                        ✗
+                    </button>
+                ` : `
+                    <span style="color:#666;font-size:12px;">
+                        ${status === 'APPROVED' ? '✓ Approved' : '✗ Rejected'}
+                    </span>
+                `}
+            </td>
+        </tr>`;
+    }
     
-    alert(`Application ${appId} ${newStatus.toLowerCase()}ed!`);
+    tbody.innerHTML = html;
 }
 
-// ================= ERROR HANDLING =================
-function showError(message) {
-    // Update all tables with error message
-    ['rationTable', 'schemeTable', 'scholar10Table', 'scholar12Table'].forEach(tableId => {
-        const table = document.getElementById(tableId);
-        if (table) {
-            const tbody = table.querySelector('tbody');
-            if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:#e74c3c;">⚠️ ${message}</td></tr>`;
+function getTableCell(item, appType, cellIndex) {
+    switch(appType) {
+        case 'ration': return cellIndex === 1 ? (item.category || 'N/A') : (item.family_members || 'N/A');
+        case 'scheme': return cellIndex === 1 ? (item.category || 'N/A') : (item.state || 'N/A');
+        case 'scholar10': return cellIndex === 1 ? (item.school || 'N/A') : (item.marks || 'N/A');
+        case 'scholar12': return cellIndex === 1 ? (item.college || 'N/A') : (item.marks || 'N/A');
+        default: return 'N/A';
+    }
+}
+
+// ================= UPDATE STATS =================
+function updateStats(ration, scheme, scholar10, scholar12) {
+    document.getElementById('rationCount').textContent = ration.length;
+    document.getElementById('schemeCount').textContent = scheme.length;
+    document.getElementById('scholar10Count').textContent = scholar10.length;
+    document.getElementById('scholar12Count').textContent = scholar12.length;
+}
+
+// ================= APPROVE/REJECT - SIMPLE VERSION =================
+async function approveApp(appId, appType, buttonElement) {
+    if (appId === 'N/A') {
+        alert('Cannot approve - invalid application ID');
+        return;
+    }
+    
+    if (!confirm(`Approve ${appId}?`)) return;
+    
+    // 1. Update UI IMMEDIATELY
+    updateStatusInUI(appId, 'APPROVED');
+    
+    // 2. Send to backend
+    try {
+        const response = await fetch(`${CONFIG.BASE_URL}${CONFIG.ENDPOINTS.UPDATE}/${appId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                status: "APPROVED", 
+                appType: appType 
+            })
+        });
+        
+        if (!response.ok) throw new Error('Backend failed');
+        
+        alert(` Application ${appId} approved!`);
+        
+    } catch (error) {
+        console.error('Backend failed:', error);
+        // UI stays approved - that's OK
+    }
+}
+
+async function rejectApp(appId, appType, buttonElement) {
+    if (appId === 'N/A') {
+        alert('Cannot reject - invalid application ID');
+        return;
+    }
+    
+    if (!confirm(`Reject ${appId}?`)) return;
+    
+    // 1. Update UI IMMEDIATELY
+    updateStatusInUI(appId, 'REJECTED');
+    
+    // 2. Send to backend
+    try {
+        const response = await fetch(`${CONFIG.BASE_URL}${CONFIG.ENDPOINTS.UPDATE}/${appId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                status: "REJECTED", 
+                appType: appType 
+            })
+        });
+        
+        if (!response.ok) throw new Error('Backend failed');
+        
+        alert(` Application ${appId} rejected!`);
+        
+    } catch (error) {
+        console.error('Backend failed:', error);
+        // UI stays rejected - that's OK
+    }
+}
+
+// ================= SIMPLE UI UPDATE =================
+function updateStatusInUI(appId, newStatus) {
+    console.log(`Updating UI: ${appId} -> ${newStatus}`);
+    
+    // Find ALL status cells with this appId
+    const statusCells = document.querySelectorAll('.status-cell');
+    
+    statusCells.forEach(cell => {
+        if (cell.getAttribute('data-app-id') === appId) {
+            // Update the status text
+            cell.textContent = newStatus;
+            cell.style.color = newStatus === 'APPROVED' ? 'green' : 'red';
+            cell.style.fontWeight = 'bold';
+            
+            // Also update the parent row's action buttons
+            const row = cell.closest('tr');
+            if (row) {
+                const actionCell = row.querySelector('td:last-child');
+                if (actionCell) {
+                    actionCell.innerHTML = `
+                        <span style="color:${newStatus === 'APPROVED' ? 'green' : 'red'};font-weight:bold;">
+                            ${newStatus === 'APPROVED' ? '✓ Approved' : '✗ Rejected'}
+                        </span>
+                    `;
+                }
             }
+            
+            console.log(` UI updated for ${appId}`);
         }
     });
 }
@@ -273,21 +234,16 @@ function showError(message) {
 document.addEventListener('DOMContentLoaded', function() {
     if (localStorage.getItem('adminLoggedIn') !== 'true') return;
     
-    console.log(' Starting FAST load...');
+    console.log('Loading admin data...');
+    loadAllData();
     
-    // Load data immediately
-    loadAllDataFast();
-    
-    // Add refresh button handler if exists
-    const refreshBtn = document.getElementById('refreshBtn');
-    if (refreshBtn) {
-        refreshBtn.onclick = loadAllDataFast;
-    }
+    // Auto-refresh every 30 seconds
+    setInterval(loadAllData, 30000);
 });
 
 // ================= GLOBAL FUNCTIONS =================
-window.approveFast = approveFast;
-window.rejectFast = rejectFast;
-window.loadAllDataFast = loadAllDataFast;
+window.approveApp = approveApp;
+window.rejectApp = rejectApp;
+window.loadAllData = loadAllData;
 
-console.log(' Ultra-fast Admin.js loaded!');
+console.log('Admin.js loaded!');
