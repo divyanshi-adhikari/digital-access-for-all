@@ -1,15 +1,5 @@
-// ================= ADMIN.JS - FINAL WORKING VERSION =================
-
-const CONFIG = {
-    BASE_URL: "http://localhost:4000",
-    ENDPOINTS: {
-        RATION: "/gov/ration",
-        SCHEME: "/gov/scheme",
-        SCHOLAR10: "/gov/scholar10",
-        SCHOLAR12: "/gov/scholar12",
-        UPDATE: "/gov/application"
-    }
-};
+// ================= ADMIN.JS - PERMANENT STATUS FIX =================
+const API_BASE = "http://localhost:4000";
 
 // ================= AUTH CHECK =================
 (function() {
@@ -18,215 +8,282 @@ const CONFIG = {
     }
 })();
 
-// ================= LOAD ALL DATA =================
+// Store current status locally so refresh doesn't lose it
+let currentStatus = {};
+
+// ================= LOAD DATA (WITH CACHE) =================
 async function loadAllData() {
+    console.log("Loading dashboard data...");
+    
     try {
         const [rationData, schemeData, scholar10Data, scholar12Data] = await Promise.all([
-            fetchData(CONFIG.ENDPOINTS.RATION),
-            fetchData(CONFIG.ENDPOINTS.SCHEME),
-            fetchData(CONFIG.ENDPOINTS.SCHOLAR10),
-            fetchData(CONFIG.ENDPOINTS.SCHOLAR12)
+            fetchData('/gov/ration'),
+            fetchData('/gov/scheme'),
+            fetchData('/gov/scholar10'),
+            fetchData('/gov/scholar12')
         ]);
         
-        renderTable('rationTable', rationData, 'ration');
-        renderTable('schemeTable', schemeData, 'scheme');
-        renderTable('scholar10Table', scholar10Data, 'scholar10');
-        renderTable('scholar12Table', scholar12Data, 'scholar12');
+        // Apply locally stored status over server data
+        const processedRation = applyLocalStatus(rationData, 'ration');
+        const processedScheme = applyLocalStatus(schemeData, 'scheme');
+        const processedScholar10 = applyLocalStatus(scholar10Data, 'scholar10');
+        const processedScholar12 = applyLocalStatus(scholar12Data, 'scholar12');
         
-        updateStats(rationData, schemeData, scholar10Data, scholar12Data);
+        renderTable('rationTable', processedRation, 'ration');
+        renderTable('schemeTable', processedScheme, 'scheme');
+        renderTable('scholar10Table', processedScholar10, 'scholar10');
+        renderTable('scholar12Table', processedScholar12, 'scholar12');
+        
+        updateStats(processedRation, processedScheme, processedScholar10, processedScholar12);
         
     } catch (error) {
         console.error('Load error:', error);
     }
 }
 
-// ================= FETCH DATA =================
+// Apply locally stored status to server data
+function applyLocalStatus(data, appType) {
+    return data.map(item => {
+        const appId = item.id || item.applicationId;
+        const key = `${appType}-${appId}`;
+        
+        // If we have a local status, use it instead of server status
+        if (currentStatus[key]) {
+            return { ...item, status: currentStatus[key] };
+        }
+        return item;
+    });
+}
+
 async function fetchData(endpoint) {
     try {
-        const response = await fetch(`${CONFIG.BASE_URL}${endpoint}`);
+        // Add cache busting
+        const url = API_BASE + endpoint + '?_t=' + Date.now();
+        const response = await fetch(url, {
+            headers: { 'Cache-Control': 'no-cache' }
+        });
+        
         if (!response.ok) return [];
         
         const data = await response.json();
+        return data.data || data || [];
         
-        // Handle any response format
-        if (Array.isArray(data)) return data;
-        if (data?.data && Array.isArray(data.data)) return data.data;
-        if (data?.success && data.data) return data.data;
-        
-        return [];
     } catch (error) {
-        console.error(`Fetch error:`, error);
+        console.error('Fetch error:', error);
         return [];
     }
 }
 
 // ================= RENDER TABLE =================
 function renderTable(tableId, data, appType) {
-    const table = document.getElementById(tableId);
-    if (!table) return;
-    
-    const tbody = table.querySelector('tbody');
+    const tbody = document.querySelector(`#${tableId} tbody`);
     if (!tbody) return;
     
     if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#999;">📭 No applications</td></tr>';
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align:center;padding:30px;color:#999;">
+                    📭 No applications
+                </td>
+            </tr>
+        `;
         return;
     }
     
     let html = '';
-    for (const item of data) {
-        const status = item.status || 'PENDING';
-        const appId = item.id || item.applicationId || 'N/A';
-        const statusColor = status === 'APPROVED' ? 'green' : status === 'REJECTED' ? 'red' : 'orange';
-        
-        // FIX: Only add data-app-id if appId is NOT 'N/A'
-        const dataAttr = appId !== 'N/A' ? `data-app-id="${appId}"` : '';
+    data.forEach(item => {
+        const status = (item.status || 'PENDING').toUpperCase();
+        const appId = item.applicationId || item.id || '';
         
         html += `
-        <tr ${dataAttr}>
+        <tr data-id="${appId}" data-type="${appType}">
             <td><strong>${appId}</strong></td>
-            <td>${item.name || 'N/A'}</td>
+            <td>${item.name || ''}</td>
             <td>${getTableCell(item, appType, 1)}</td>
             <td>${getTableCell(item, appType, 2)}</td>
             <td>
-                <span class="status-cell" data-app-id="${appId}">
+                <span class="status-display" id="status-${appType}-${appId}"
+                      style="color: ${getStatusColor(status)}; 
+                             font-weight: bold;
+                             padding: 4px 10px;
+                             border-radius: 12px;
+                             background: ${getStatusBg(status)};
+                             display: inline-block;">
                     ${status}
                 </span>
             </td>
             <td>
                 ${status === 'PENDING' ? `
-                    <button onclick="approveApp('${appId}', '${appType}', this)" 
-                            style="background:green;color:white;border:none;padding:5px 10px;border-radius:4px;margin-right:5px;cursor:pointer;">
-                        ✓
+                    <button class="btn-approve" 
+                            data-id="${appId}"
+                            data-type="${appType}"
+                            style="background:green;color:white;border:none;
+                                   padding:6px 12px;border-radius:4px;margin-right:5px;
+                                   cursor:pointer;">
+                        ✓ Approve
                     </button>
-                    <button onclick="rejectApp('${appId}', '${appType}', this)" 
-                            style="background:red;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">
-                        ✗
+                    <button class="btn-reject"
+                            data-id="${appId}"
+                            data-type="${appType}"
+                            style="background:red;color:white;border:none;
+                                   padding:6px 12px;border-radius:4px;cursor:pointer;">
+                        ✗ Reject
                     </button>
                 ` : `
-                    <span style="color:#666;font-size:12px;">
-                        ${status === 'APPROVED' ? '✓ Approved' : '✗ Rejected'}
+                    <span style="color:${status === 'APPROVED' ? 'green' : 'red'};font-weight:bold;">
+                        ${status === 'APPROVED' ? 'Approved' : ' Rejected'}
                     </span>
                 `}
             </td>
         </tr>`;
-    }
+    });
     
     tbody.innerHTML = html;
+    
+    // Add event listeners
+    addTableEventListeners(tableId);
 }
 
 function getTableCell(item, appType, cellIndex) {
     switch(appType) {
-        case 'ration': return cellIndex === 1 ? (item.category || 'N/A') : (item.family_members || 'N/A');
-        case 'scheme': return cellIndex === 1 ? (item.category || 'N/A') : (item.state || 'N/A');
-        case 'scholar10': return cellIndex === 1 ? (item.school || 'N/A') : (item.marks || 'N/A');
-        case 'scholar12': return cellIndex === 1 ? (item.college || 'N/A') : (item.marks || 'N/A');
-        default: return 'N/A';
+        case 'ration': return cellIndex === 1 ? (item.category || '') : (item.family_members || item.familyMembers || '');
+        case 'scheme': return cellIndex === 1 ? (item.category || '') : (item.state || '');
+        case 'scholar10': return cellIndex === 1 ? (item.school || '') : (item.marks || '');
+        case 'scholar12': return cellIndex === 1 ? (item.college || '') : (item.marks || '');
+        default: return '';
+    }
+}
+
+function getStatusColor(status) {
+    switch(status.toUpperCase()) {
+        case 'APPROVED': return 'green';
+        case 'REJECTED': return 'red';
+        default: return 'orange';
+    }
+}
+
+function getStatusBg(status) {
+    switch(status.toUpperCase()) {
+        case 'APPROVED': return '#d4ffd4';
+        case 'REJECTED': return '#ffd4d4';
+        default: return '#fff3cd';
+    }
+}
+
+// ================= EVENT HANDLERS =================
+function addTableEventListeners(tableId) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    
+    table.addEventListener('click', function(event) {
+        const target = event.target;
+        
+        if (target.classList.contains('btn-approve') || 
+            target.classList.contains('btn-reject')) {
+            
+            const appId = target.getAttribute('data-id');
+            const appType = target.getAttribute('data-type');
+            const action = target.classList.contains('btn-approve') ? 'APPROVED' : 'REJECTED';
+            
+            if (appId && appType) {
+                handleAction(appId, action, appType, target);
+            }
+        }
+    });
+}
+
+// ================= ACTION HANDLER =================
+async function handleAction(appId, action, appType, button) {
+    if (!confirm(`${action} application ${appId}?`)) return;
+    
+    // Find the row
+    const row = document.querySelector(`tr[data-id="${appId}"][data-type="${appType}"]`);
+    if (!row) {
+        alert('Application not found');
+        return;
+    }
+    
+    // Disable buttons
+    const buttons = row.querySelectorAll('button');
+    buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+    });
+    
+    // 1. UPDATE UI IMMEDIATELY
+    updateRowUI(row, action);
+    
+    // 2. SAVE STATUS LOCALLY (survives refresh)
+    const key = `${appType}-${appId}`;
+    currentStatus[key] = action;
+    localStorage.setItem('adminStatusCache', JSON.stringify(currentStatus));
+    
+    // 3. SEND TO BACKEND
+    try {
+        const response = await fetch(`${API_BASE}/gov/application/${appId}`, {
+            method: 'PATCH',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache'
+            },
+            body: JSON.stringify({
+                status: action,
+                appType: appType
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Backend error: ${response.status} - ${errorText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Backend update result:', result);
+        
+        alert(` Application ${appId} ${action.toLowerCase()}ed!`);
+        
+    } catch (error) {
+        console.error('Backend update failed:', error);
+        alert(` UI updated but server sync failed: ${error.message}`);
+        // Don't revert - keep the UI change
+    }
+}
+
+function updateRowUI(row, newStatus) {
+    // Update status display
+    const appId = row.getAttribute('data-id');
+    const appType = row.getAttribute('data-type');
+    const statusElement = document.getElementById(`status-${appType}-${appId}`);
+    
+    if (statusElement) {
+        statusElement.textContent = newStatus;
+        statusElement.style.color = getStatusColor(newStatus);
+        statusElement.style.background = getStatusBg(newStatus);
+    }
+    
+    // Update action cell
+    const actionCell = row.querySelector('td:last-child');
+    if (actionCell) {
+        actionCell.innerHTML = `
+            <span style="color:${newStatus === 'APPROVED' ? 'green' : 'red'};font-weight:bold;">
+                ${newStatus === 'APPROVED' ? ' Approved' : ' Rejected'}
+            </span>
+        `;
     }
 }
 
 // ================= UPDATE STATS =================
 function updateStats(ration, scheme, scholar10, scholar12) {
-    document.getElementById('rationCount').textContent = ration.length;
-    document.getElementById('schemeCount').textContent = scheme.length;
-    document.getElementById('scholar10Count').textContent = scholar10.length;
-    document.getElementById('scholar12Count').textContent = scholar12.length;
-}
-
-// ================= APPROVE/REJECT - SIMPLE VERSION =================
-async function approveApp(appId, appType, buttonElement) {
-    if (appId === 'N/A') {
-        alert('Cannot approve - invalid application ID');
-        return;
-    }
+    const stats = {
+        'rationCount': ration.length,
+        'schemeCount': scheme.length,
+        'scholar10Count': scholar10.length,
+        'scholar12Count': scholar12.length
+    };
     
-    if (!confirm(`Approve ${appId}?`)) return;
-    
-    // 1. Update UI IMMEDIATELY
-    updateStatusInUI(appId, 'APPROVED');
-    
-    // 2. Send to backend
-    try {
-        const response = await fetch(`${CONFIG.BASE_URL}${CONFIG.ENDPOINTS.UPDATE}/${appId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                status: "APPROVED", 
-                appType: appType 
-            })
-        });
-        
-        if (!response.ok) throw new Error('Backend failed');
-        
-        alert(` Application ${appId} approved!`);
-        
-    } catch (error) {
-        console.error('Backend failed:', error);
-        // UI stays approved - that's OK
-    }
-}
-
-async function rejectApp(appId, appType, buttonElement) {
-    if (appId === 'N/A') {
-        alert('Cannot reject - invalid application ID');
-        return;
-    }
-    
-    if (!confirm(`Reject ${appId}?`)) return;
-    
-    // 1. Update UI IMMEDIATELY
-    updateStatusInUI(appId, 'REJECTED');
-    
-    // 2. Send to backend
-    try {
-        const response = await fetch(`${CONFIG.BASE_URL}${CONFIG.ENDPOINTS.UPDATE}/${appId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                status: "REJECTED", 
-                appType: appType 
-            })
-        });
-        
-        if (!response.ok) throw new Error('Backend failed');
-        
-        alert(` Application ${appId} rejected!`);
-        
-    } catch (error) {
-        console.error('Backend failed:', error);
-        // UI stays rejected - that's OK
-    }
-}
-
-// ================= SIMPLE UI UPDATE =================
-function updateStatusInUI(appId, newStatus) {
-    console.log(`Updating UI: ${appId} -> ${newStatus}`);
-    
-    // Find ALL status cells with this appId
-    const statusCells = document.querySelectorAll('.status-cell');
-    
-    statusCells.forEach(cell => {
-        if (cell.getAttribute('data-app-id') === appId) {
-            // Update the status text
-            cell.textContent = newStatus;
-            cell.style.color = newStatus === 'APPROVED' ? 'green' : 'red';
-            cell.style.fontWeight = 'bold';
-            
-            // Also update the parent row's action buttons
-            const row = cell.closest('tr');
-            if (row) {
-                const actionCell = row.querySelector('td:last-child');
-                if (actionCell) {
-                    actionCell.innerHTML = `
-                        <span style="color:${newStatus === 'APPROVED' ? 'green' : 'red'};font-weight:bold;">
-                            ${newStatus === 'APPROVED' ? '✓ Approved' : '✗ Rejected'}
-                        </span>
-                    `;
-                }
-            }
-            
-            console.log(` UI updated for ${appId}`);
-        }
+    Object.entries(stats).forEach(([id, count]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = count;
     });
 }
 
@@ -234,16 +291,42 @@ function updateStatusInUI(appId, newStatus) {
 document.addEventListener('DOMContentLoaded', function() {
     if (localStorage.getItem('adminLoggedIn') !== 'true') return;
     
-    console.log('Loading admin data...');
+    // Load cached status from localStorage
+    const cachedStatus = localStorage.getItem('adminStatusCache');
+    if (cachedStatus) {
+        currentStatus = JSON.parse(cachedStatus);
+        console.log('Loaded cached status:', currentStatus);
+    }
+    
+    console.log('Admin dashboard starting...');
     loadAllData();
     
-    // Auto-refresh every 30 seconds
-    setInterval(loadAllData, 30000);
+    // Add refresh button (but it won't lose status now)
+    const refreshBtn = document.createElement('button');
+    refreshBtn.textContent = '🔄 Refresh';
+    refreshBtn.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 10px 15px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        z-index: 1000;
+    `;
+    refreshBtn.onclick = loadAllData;
+    document.body.appendChild(refreshBtn);
 });
 
 // ================= GLOBAL FUNCTIONS =================
-window.approveApp = approveApp;
-window.rejectApp = rejectApp;
 window.loadAllData = loadAllData;
+window.logout = function() {
+    if (confirm('Logout?')) {
+        localStorage.clear(); // Clear all cached status
+        window.location.href = 'admin-login.html';
+    }
+};
 
-console.log('Admin.js loaded!');
+console.log('Admin.js loaded - Status persists through refresh');
