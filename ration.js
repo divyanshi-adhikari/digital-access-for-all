@@ -3,24 +3,21 @@ import { initDB, saveApplication, getPendingSyncs, markSynced, updateSyncStatus 
 await initDB();
 
 const form = document.getElementById("rationForm");
+console.log("ration.js loaded, form =", form);
 
 // Sync function for ration
 async function syncRationToBackend(formData, dbId = null) {
     try {
         const payload = {
-            service_type: "ration",
-            form_data: {
-                name: formData.name,
-                category: formData.category,
-                ration_number: formData.ration_number,
-                family_members: formData.family_members,
-                timestamp: new Date().toISOString()
-            }
-        };
-        
+    name: formData.name,
+    category: formData.category,
+    ration_number: formData.ration_number,
+    family_members: formData.family_members
+};
+
         console.log('Sending ration sync request:', payload);
         
-        const response = await fetch('http://localhost:4000/sync/submit', {
+        const response = await fetch('http://localhost:4000/gov/ration', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -34,8 +31,8 @@ async function syncRationToBackend(formData, dbId = null) {
         console.log('Ration sync successful:', result);
         
         // Mark as synced in IndexedDB if we have a dbId
-        if (dbId && result.success) {
-            await markSynced(dbId, result);
+        if (dbId) {
+    await markSynced(dbId, result);
         }
         
         return { success: true, data: result };
@@ -44,7 +41,7 @@ async function syncRationToBackend(formData, dbId = null) {
         
         // Update sync status to failed
         if (dbId) {
-            await updateSyncStatus(dbId, "sync_failed", error);
+            await updateSyncStatus(dbId, "sync_failed", error.message);
         }
         
         return { 
@@ -66,8 +63,12 @@ window.addEventListener('online', async () => {
         
         for (const pending of rationPending) {
             console.log('Retrying ration sync for:', pending.id);
-            
-            const result = await syncRationToBackend(pending, pending.id);
+            const result = await syncRationToBackend({
+    name: pending.name,
+    category: pending.category,
+    ration_number: pending.ration_number,
+    family_members: pending.family_members
+}, pending.id);
             
             if (result.success) {
                 console.log('Successfully synced pending ration application:', pending.id);
@@ -106,7 +107,7 @@ form.addEventListener("submit", async (e) => {
             const syncResult = await syncRationToBackend(data, dbResult.id);
             
             if (syncResult.success) {
-                alert(`Ration card application submitted successfully!\nApplication ID: ${syncResult.data.application_id}\nStatus: ${syncResult.data.status}`);
+                alert("Ration card application submitted successfully!");
             } else {
                 alert(`Ration card saved locally.\nWill automatically sync when possible.\nError: ${syncResult.error}`);
             }

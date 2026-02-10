@@ -92,7 +92,7 @@ form.addEventListener("submit", async (e) => {
     try {
         // Save to IndexedDB first
         const dbResult = await saveApplication({
-            formType: "scholarship10",
+            formType: "scholar10",
             ...data,
             status: "pending_sync",
             createdAt: new Date()
@@ -105,18 +105,18 @@ form.addEventListener("submit", async (e) => {
             const syncResult = await syncScholar10ToBackend(data, dbResult.id);
             
             if (syncResult.success) {
-                alert(`✅ Scholarship 10th application submitted successfully!\nApplication ID: ${syncResult.data.application_id}\nStatus: ${syncResult.data.status}`);
+                alert(` Scholarship 10th application submitted successfully!\nApplication ID: ${syncResult.data.application_id}\nStatus: ${syncResult.data.status}`);
             } else {
-                alert(`⚠️ Scholarship 10th saved locally.\nWill automatically sync when possible.\nError: ${syncResult.error}`);
+                alert(` Scholarship 10th saved locally.\nWill automatically sync when possible.\nError: ${syncResult.error}`);
             }
         } else {
-            alert("📴 Scholarship 10th saved offline.\nWill sync automatically when you're back online.");
+            alert(" Scholarship 10th saved offline.\nWill sync automatically when you're back online.");
         }
         
         form.reset();
     } catch (error) {
         console.error('Error saving scholarship10 data:', error);
-        alert("❌ Error saving scholarship data");
+        alert(" Error saving scholarship data");
     }
 });
 
@@ -124,7 +124,7 @@ form.addEventListener("submit", async (e) => {
 setInterval(async () => {
     if (navigator.onLine) {
         const pending = await getPendingSyncs();
-        const scholar10Pending = pending.filter(app => app.formType === "scholarship10");
+        const scholar10Pending = pending.filter(app => app.formType === "scholar10");
         if (scholar10Pending.length > 0) {
             console.log(`Background sync: ${scholar10Pending.length} pending scholarship10 applications`);
             // Optional: Auto-sync them

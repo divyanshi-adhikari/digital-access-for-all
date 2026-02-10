@@ -1,68 +1,170 @@
-/* =========================GLOBAL RESET & BASE========================= */
+/* ================= GLOBAL RESET ================= */
 * {
-  box-sizing: border-box;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-  font-family: Arial, sans-serif;
-  background: #f4f6f9;
-  margin: 0;
-  padding: 0;
-  line-height: 1.5;
-  color: #333;
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    color: #333;
+    padding: 16px;
+    line-height: 1.5;
 }
 
-/* =========================HEADER========================= */
-.app-header {
-  background: #0d6efd;
-  color: #ffffff;
-  padding: 18px 16px;
-  text-align: center;
+/* ================= PAGE TITLE ================= */
+h1 {
+    text-align: center;
+    color: #dc3545;
+    margin-bottom: 20px;
 }
 
-.app-header h1 {
-  margin: 0;
-  font-size: 22px;
+/* ================= HEADER ================= */
+header {
+    background: #0d6efd;
+    color: #fff;
+    padding: 16px;
+    text-align: center;
+    border-radius: 10px;
+    margin-bottom: 20px;
 }
 
-.app-header nav {
-  margin-top: 10px;
+header h1 {
+    font-size: 22px;
+    margin-bottom: 8px;
 }
 
-.app-header nav a {
-  color: #ffffff;
-  text-decoration: none;
-  margin: 0 10px;
-  font-weight: 500;
+header nav a {
+    color: #fff;
+    text-decoration: none;
+    margin: 0 6px;
+    font-weight: 500;
 }
 
-.app-header nav a:hover {
-  text-decoration: underline;
+header nav a:hover {
+    text-decoration: underline;
 }
 
-/* =========================FORM CARD========================= */
-.form-container {
-  max-width: 440px;
-  margin: 48px auto;
-  background: #ffffff;
-  padding: 32px;
-  border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+/* ================= SECTION CARD (EMERGENCY STYLE) ================= */
+.section,
+.form-card {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
-.form-contain 
-
-.field select {
-  width: 100%;
-  padding: 12px;
-  font-size: 15px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  outline: none;
-  background: #ffffff;
+/* ================= SECTION HEADINGS ================= */
+.section h2,
+.form-card h2,
+.form-card h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: #333;
 }
 
-.field select:focus {
-  border-color: #0d6efd;
+/* ================= FORM ================= */
+form {
+    width: 100%;
 }
 
+/* ================= FORM GROUP ================= */
+.form-group,
+form > div {
+    margin-bottom: 12px;
+}
+
+label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: #fff;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: #0d6efd;
+    outline: none;
+}
+
+/* ================= BUTTON ================= */
+button,
+.primary-btn {
+    width: 100%;
+    padding: 12px;
+    background: #0d6efd;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:hover,
+.primary-btn:hover {
+    background: #0b5ed7;
+}
+
+/* ================= LISTS (Emergency SOP style) ================= */
+ul {
+    padding-left: 18px;
+}
+
+li {
+    margin-bottom: 8px;
+}
+
+/* ================= HELPLINE TEXT ================= */
+.helpline {
+    font-size: 15px;
+    margin: 6px 0;
+}
+
+/* ================= HELPER / STATUS TEXT ================= */
+.helper-text,
+#offline-status {
+    text-align: center;
+    font-size: 14px;
+    color: #28a745;
+    margin-top: 8px;
+}
+
+/* ================= FOOTER BUTTON ================= */
+.back {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.back a {
+    text-decoration: none;
+    color: white;
+    background: #0d6efd;
+    padding: 10px 16px;
+    border-radius: 6px;
+}
+
+/* ================= MOBILE ================= */
+@media (max-width: 480px) {
+    body {
+    padding: 12px;
+}
+
+header h1 {
+    font-size: 20px;
+}
+}

@@ -224,7 +224,7 @@ async function handleSubmit(event) {
 
             if (response.ok) {
                 const result = await response.json();
-                alert(` ✅ Application Submitted Successfully!\n\nApplication ID: ${result.application_id}\nStatus: ${result.status}\n\nYour application has been received.`);
+                alert(` Application Submitted Successfully!\n\nApplication ID: ${result.application_id}\nStatus: ${result.status}\n\nYour application has been received.`);
                 
                 // Reset form
                 document.getElementById(CONFIG.FORM_IDS.FORM).reset();
@@ -250,7 +250,7 @@ async function handleSubmit(event) {
         
     } catch (dbError) {
         console.error("Failed to save offline:", dbError);
-        alert(" ❌ Error\n\nFailed to save your application. Please try again.");
+        alert("  Error\n\nFailed to save your application. Please try again.");
     }
 }
 

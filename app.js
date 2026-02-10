@@ -2,25 +2,25 @@ import { initDB, saveApplication, getPendingSyncs, markSynced, updateSyncStatus 
 
 await initDB();
 
-const form = document.getElementById("schemeForm");
+const form = document.getElementById("govForm");
+console.log("govForm =", form);
+if (!form) {
+    console.error("Government scheme form not found");
+}
+
 
 // Sync function for scheme
 async function syncSchemeToBackend(formData, dbId = null) {
     try {
         const payload = {
-            service_type: "scheme",
-            form_data: {
-                name: formData.name,
-                category: formData.category,
-                state: formData.state,
-                scheme_type: formData.scheme_type,
-                timestamp: new Date().toISOString()
-            }
-        };
+    name: formData.name,
+    category: formData.category,
+    state: formData.state
+};
         
         console.log('Sending scheme sync request:', payload);
         
-        const response = await fetch('http://localhost:4000/sync/submit', {
+        const response = await fetch('http://localhost:4000/gov/scheme', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -44,7 +44,7 @@ async function syncSchemeToBackend(formData, dbId = null) {
         
         // Update sync status to failed
         if (dbId) {
-            await updateSyncStatus(dbId, "sync_failed", error);
+            await updateSyncStatus(dbId, "sync_failed", error.message);
         }
         
         return { 
@@ -80,14 +80,15 @@ window.addEventListener('online', async () => {
     }
 });
 
+if (form) {
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    
+    console.log("Government Scheme form submitted");
+
     const data = {
         name: document.getElementById("name").value,
         category: document.getElementById("category").value,
         state: document.getElementById("state").value,
-        scheme_type: document.getElementById("scheme_type").value,
     };
 
     try {
@@ -102,21 +103,23 @@ form.addEventListener("submit", async (e) => {
         console.log('Saved to IndexedDB with ID:', dbResult.id);
         
         // Try to sync if online
-        if (navigator.onLine) {
-            const syncResult = await syncSchemeToBackend(data, dbResult.id);
-            
-            if (syncResult.success) {
-                alert(`Scheme application submitted successfully!\nApplication ID: ${syncResult.data.application_id}\nStatus: ${syncResult.data.status}`);
-            } else {
-                alert(`Scheme saved locally.\nWill automatically sync when possible.\nError: ${syncResult.error}`);
-            }
-        } else {
-            alert("Scheme saved offline.\nWill sync automatically when you're back online.");
-        }
+        // Try sync but NEVER block form submission
+if (navigator.onLine) {
+    try {
+        await syncSchemeToBackend(data, dbResult.id);
+        alert("Scheme application submitted successfully ");
+    } catch (err) {
+        alert("Scheme saved locally. Will sync automatically ");
+    }
+} else {
+    alert("Scheme saved offline. Will sync when online ");
+}
+
         
         form.reset();
     } catch (error) {
         console.error('Error saving scheme data:', error);
         alert(" Error saving scheme data");
     }
-});
+}); 
+}

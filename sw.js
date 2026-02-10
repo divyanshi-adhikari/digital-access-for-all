@@ -1,15 +1,25 @@
-const CACHE_NAME = "digital-access-for-all-v1";
+const CACHE_NAME = "digital-access-for-all-v3";
 
 const FILES_TO_CACHE = [
     "./",
+    "./home.html",
     "./index.html",
-    "./app.js",
+    "./ration.html",
+    "./scholarship10.html",
+    "./scholarship12.html",
     "./emergency.html",
-    "./manifest.json",
-    "./style.css"
+
+    "./app.js",
+    "./ration.js",
+    "./db.js",
+    "./sync.js",
+
+    "./style.css",
+    "./manifest.json"
 ];
 
-// Install event – cache files
+
+// INSTALL
 self.addEventListener("install", event => {
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
@@ -17,13 +27,13 @@ self.addEventListener("install", event => {
     self.skipWaiting();
 });
 
-// Activate event – clean old caches
+// ACTIVATE
 self.addEventListener("activate", event => {
     event.waitUntil(
-        caches.keys().then(cacheNames =>
+        caches.keys().then(keys =>
             Promise.all(
-                cacheNames.map(cache =>
-                    cache !== CACHE_NAME ? caches.delete(cache) : null
+                keys.map(key =>
+                    key !== CACHE_NAME ? caches.delete(key) : null
                 )
             )
         )
@@ -31,18 +41,22 @@ self.addEventListener("activate", event => {
     self.clients.claim();
 });
 
-// Fetch event – cache frontend only, NOT APIs
+// FETCH
 self.addEventListener("fetch", event => {
-    const req = event.request;
-    const url = new URL(req.url);
+    if (event.request.method !== "GET") return;
 
-    if (
-        url.origin === location.origin &&
-        !url.pathname.startsWith("/gov") &&
-        !url.pathname.startsWith("/sync")
-    ) {
-        event.respondWith(
-            caches.match(req).then(response => response || fetch(req))
-        );
+    const url = new URL(event.request.url);
+
+    // Let backend requests go to network
+    if (url.pathname.startsWith("/gov") || url.pathname.startsWith("/sync")) {
+        return;
     }
+
+    event.respondWith(
+        caches.match(event.request).then(cached => {
+            return cached || fetch(event.request);
+        })
+    );
 });
+
+

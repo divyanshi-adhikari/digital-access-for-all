@@ -6,12 +6,9 @@
     <meta name="theme-color" content="#0d6efd">
     <title>Digital Divide</title>
     <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
 </head>
     <body>
-        <script>
-            window.location.replace("home.html");
-</script>
-
         <header>
             <h1>Digital Divide PWA</h1>
             <nav>
@@ -21,30 +18,35 @@
                 <a href="ration.html">Ration Card</a>
             </nav>
         </header>
-        <main>
-            <section>
-                <h2>User Information Form</h2>
-                <p id="offline-status" style="color:green;"></p>
+        <main class="page-wrapper">
+            
+            <div class="page-header">
+    <h2>📋 Government Scheme</h2>
+    <p>Offline-first application. Data syncs automatically.</p>
+            </div>
+            
+            <div class="form-card">
+    <h3>User Information Form</h3>
 
-                <form id="govForm"> <!-- Personal Details -->
-                
-                    <div>
-                        <label for="name">Full Name</label><br>
-                        <input type="text" id="name" name="name" required>
-                    </div><br>
-                    <div>
-                        <label for="dob">Date of Birth</label>
-                        <br>
-                        <input type="date" id="dob" name="dob" required>
-                    </div><br>
-                    
-                    <!-- Location Details -->
-                    
-                    <div>
-                        <label for="state">State</label><br>
-                        <select id="state" name="state" required>
-    <option value="">Select your state</option>
-    <option>Andhra Pradesh</option>
+    <p id="offline-status" style="color:green;"></p>
+
+    <form id="govForm">
+        
+        <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" required>
+        </div>
+        
+        <div class="form-group">
+        <label for="dob">Date of Birth</label>
+        <input type="date" id="dob" name="dob" required>
+        </div>
+
+        <div class="form-group">
+        <label for="state">State</label>
+        <select id="state" name="state" required>
+            <option value="">Select your state</option>
+            <option>Andhra Pradesh</option>
     <option>Arunachal Pradesh</option>
     <option>Assam</option>
     <option>Bihar</option>
@@ -72,41 +74,43 @@
     <option>Uttar Pradesh</option>
     <option>Uttarakhand</option>
     <option>West Bengal</option>
-    </select>
-                    </div><br>
-                    <div>
-                        <label for="city">City / District</label><br>
-                        <input type="text" id="city" name="city" required>
-                    </div><br>
-                    <div>
-                        <label for="address">Address</label><br>
-                        <textarea id="address" name="address" rows="4" required></textarea>
-                    </div><br>
-                    
-                    <!-- Eligibility Details -->
-                    
-                    <div>
-                        <label for="category">Category</label><br>
-                        <select id="category" name="category" required>
-                        <option value="">Select category</option>
-                        <option value="general">General</option>
-                        <option value="sc">SC</option> <option value="st">ST</option>
-                        <option value="obc">OBC</option>
-                        <option value="ews">EWS</option>
-                    </select>
-                </div><br>
-                <div>
-                    <label for="income">Annual Income</label><br>
-                    <input type="number" id="income" name="income" required>
-                </div><br>
-                
-                <!-- Action -->
-                
-                <button type="submit">Save Details</button>
-            
-            </form>
-        </section>
-    </main>
+        </select>
+        </div>
+
+        <div class="form-group">
+        <label for="city">City / District</label>
+        <input type="text" id="city" name="city" required>
+        </div>
+
+        <div class="form-group">
+        <label for="address">Address</label>
+        <textarea id="address" name="address" rows="3" required></textarea>
+        </div>
+
+        <div class="form-group">
+        <label for="category">Category</label>
+        <select id="category" name="category" required>
+            <option value="">Select category</option>
+            <option value="general">General</option>
+            <option value="sc">SC</option>
+            <option value="st">ST</option>
+            <option value="obc">OBC</option>
+            <option value="ews">EWS</option>
+        </select>
+        </div>
+        
+        <div class="form-group">
+        <label for="income">Annual Income</label>
+        <input type="number" id="income" name="income" required>
+        </div>
+
+        <button type="submit" class="primary-btn">Save Details</button>
+        
+        <p class="helper-text">Offline submissions are saved automatically</p>
+
+    </form>
+</div>
+</main>
     <script type="module" src="app.js"></script>
 </body>
 </html>
