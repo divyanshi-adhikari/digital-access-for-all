@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Portal | Digital Access for All</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Community Portal Styles */
+    :root {
+      --primary: #4CAF50;
+      --secondary: #2196F3;
+      --success: #4CAF50;
+      --warning: #FF9800;
+      --danger: #f44336;
+      --light: #f8f9fa;
+      --dark: #343a40;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      color: #333;
+    }
+    
+    .community-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    /* Header */
+    .portal-header {
+      background: white;
+      border-radius: 15px;
+      padding: 25px 30px;
+      margin-bottom: 25px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+      border-left: 6px solid var(--primary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    
+    .header-left h1 {
+      color: #2c3e50;
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    
+    .header-left .tagline {
+      color: #7f8c8d;
+      font-size: 16px;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+    
+    /* Status Badge */
+    .status-badge {
+      padding: 8px 16px;
+      border-radius: 25px;
+      font-weight: 600;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .status-active {
+      background: #d4edda;
+      color: #155724;
+      border: 2px solid #c3e6cb;
+    }
+    
+    .status-inactive {
+      background: #f8d7da;
+      color: #721c24;
+      border: 2px solid #f5c6cb;
+    }
+    
+    /* Navigation */
+    .portal-nav {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 25px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    
+    .nav-tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      list-style: none;
+    }
+    
+    .nav-tabs a {
+      padding: 12px 24px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      text-decoration: none;
+      color: #495057;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s;
+      border: 2px solid transparent;
+    }
+    
+    .nav-tabs a:hover {
+      background: #e9ecef;
+      transform: translateY(-2px);
+    }
+    
+    .nav-tabs a.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    
+    /* Main Content */
+    .portal-content {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 25px;
+    }
+    
+    @media (max-width: 992px) {
+      .portal-content {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Left Column - Content Sections */
+    .content-main {
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+    
+    .content-section {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+      animation: slideUp 0.5s ease-out;
+    }
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 3px solid #f8f9fa;
+    }
+    
+    .section-header h2 {
+      color: #2c3e50;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .section-badge {
+      background: var(--secondary);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    /* Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    
+    @media (max-width: 768px) {
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .content-card {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 20px;
+      border-left: 4px solid var(--primary);
+      transition: all 0.3s;
+      height: 100%;
+    }
+    
+    .content-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+    
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 5px;
+    }
+    
+    .card-badge {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    
+    .badge-new {
+      background: #ffebee;
+      color: #c62828;
+    }
+    
+    .badge-urgent {
+      background: #fff3e0;
+      color: #ef6c00;
+    }
+    
+    .badge-updated {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    
+    .card-date {
+      font-size: 12px;
+      color: #7f8c8d;
+      margin-bottom: 10px;
+    }
+    
+    .card-content {
+      color: #5a6268;
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+    
+    .card-meta {
+      display: flex;
+      gap: 15px;
+      font-size: 13px;
+      color: #6c757d;
+      margin-top: 15px;
+    }
+    
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    /* Right Column - Sharing Panel */
+    .sharing-panel {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+      position: sticky;
+      top: 20px;
+    }
+    
+    .sharing-header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    
+    .sharing-header h3 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+    
+    .qr-container {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 25px;
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    
+    #qrCanvas {
+      border: 1px solid #dee2e6;
+      padding: 10px;
+      background: white;
+      border-radius: 8px;
+      margin: 15px auto;
+    }
+    
+    /* Buttons */
+    .btn {
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #45a049;
+      transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+    
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+    
+    .btn-sm {
+      padding: 8px 16px;
+      font-size: 14px;
+      width: auto;
+    }
+    
+    /* Link Box */
+    .link-box {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 15px;
+      margin: 20px 0;
+      border: 1px solid #dee2e6;
+    }
+    
+    .link-box code {
+      font-family: monospace;
+      word-break: break-all;
+      color: var(--primary);
+      font-weight: 600;
+    }
+    
+    /* Devices Panel */
+    .devices-panel {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 25px;
+    }
+    
+    .device-list {
+      list-style: none;
+      margin-top: 15px;
+    }
+    
+    .device-item {
+      padding: 12px;
+      background: white;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border-left: 4px solid var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .device-icon {
+      font-size: 20px;
+    }
+    
+    /* Statistics */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      text-align: center;
+      border: 2px solid #f8f9fa;
+    }
+    
+    .stat-number {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 5px;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: #6c757d;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    
+    /* Footer */
+    .portal-footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+      color: #6c757d;
+      font-size: 14px;
+    }
+    
+    /* Utility Classes */
+    .hidden {
+      display: none !important;
+    }
+    
+    .text-center {
+      text-align: center;
+    }
+    
+    .mb-3 {
+      margin-bottom: 1rem;
+    }
+    
+    .mt-3 {
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="community-container">
+    <!-- Header -->
+    <header class="portal-header">
+      <div class="header-left">
+        <h1>🏘️ Community Digital Portal</h1>
+        <p class="tagline">Share information, resources, and services offline with your community</p>
+      </div>
+      <div class="header-actions">
+        <div class="status-badge" id="statusIndicator">
+          <span class="status-dot"></span>
+          <span id="statusText">Ready to Share</span>
+        </div>
+        <a href="index.html" class="btn btn-secondary btn-sm">
+          ← Back to Home
+        </a>
+      </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="portal-nav">
+      <ul class="nav-tabs">
+        <li><a href="#announcements" class="active" onclick="showSection('announcements')">
+          📢 Announcements
+        </a></li>
+        <li><a href="#schemes" onclick="showSection('schemes')">
+          🏛️ Government Schemes
+        </a></li>
+        <li><a href="#resources" onclick="showSection('resources')">
+          🆘 Help & Resources
+        </a></li>
+        <li><a href="#awareness" onclick="showSection('awareness')">
+          📚 Awareness Materials
+        </a></li>
+        <li><a href="#forms" onclick="showSection('forms')">
+          📝 Application Forms
+        </a></li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="portal-content">
+      <!-- Left Column - Dynamic Content -->
+      <div class="content-main">
+        <!-- Announcements Section -->
+        <section id="announcements-section" class="content-section">
+          <div class="section-header">
+            <h2>📢 Local Announcements</h2>
+            <span class="section-badge">Updated Today</span>
+          </div>
+          <div class="cards-grid" id="announcements-content">
+            <!-- Dynamic content will be loaded here -->
+          </div>
+        </section>
+
+        <!-- Government Schemes Section -->
+        <section id="schemes-section" class="content-section hidden">
+          <div class="section-header">
+            <h2>🏛️ Government Schemes</h2>
+            <span class="section-badge">10+ Schemes</span>
+          </div>
+          <div class="cards-grid" id="schemes-content">
+            <!-- Dynamic content will be loaded here -->
+          </div>
+        </section>
+
+        <!-- Help & Resources Section -->
+        <section id="resources-section" class="content-section hidden">
+          <div class="section-header">
+            <h2>🆘 Help & Resources</h2>
+            <span class="section-badge">Emergency Info</span>
+          </div>
+          <div class="cards-grid" id="resources-content">
+            <!-- Dynamic content will be loaded here -->
+          </div>
+        </section>
+
+        <!-- Awareness Materials Section -->
+        <section id="awareness-section" class="content-section hidden">
+          <div class="section-header">
+            <h2>📚 Awareness Materials</h2>
+            <span class="section-badge">Educational</span>
+          </div>
+          <div class="cards-grid" id="awareness-content">
+            <!-- Dynamic content will be loaded here -->
+          </div>
+        </section>
+
+        <!-- Application Forms Section -->
+        <section id="forms-section" class="content-section hidden">
+          <div class="section-header">
+            <h2>📝 Application Forms</h2>
+            <span class="section-badge">4 Forms Available</span>
+          </div>
+          <div class="cards-grid">
+            <div class="content-card">
+              <div class="card-header">
+                <h3 class="card-title">Ration Card Application</h3>
+                <span class="card-badge badge-urgent">Priority</span>
+              </div>
+              <p class="card-content">Apply for new ration card or modify existing details. Required documents: Aadhar, Address proof.</p>
+              <div class="card-meta">
+                <span class="meta-item">⏱️ 10 min to complete</span>
+                <span class="meta-item">📄 3 documents needed</span>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="window.location.href='ration.html'">
+                Open Form →
+              </button>
+            </div>
+
+            <div class="content-card">
+              <div class="card-header">
+                <h3 class="card-title">10th Scholarship</h3>
+                <span class="card-badge badge-updated">Updated</span>
+              </div>
+              <p class="card-content">Scholarship for 10th class students. Income limit: ₹2.5 Lakh/annum. Last date: Mar 15.</p>
+              <div class="card-meta">
+                <span class="meta-item">🎓 For 10th Students</span>
+                <span class="meta-item">💰 Up to ₹5000</span>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="window.location.href='scholarship10.html'">
+                Open Form →
+              </button>
+            </div>
+
+            <div class="content-card">
+              <div class="card-header">
+                <h3 class="card-title">12th Scholarship</h3>
+                <span class="card-badge badge-updated">Updated</span>
+              </div>
+              <p class="card-content">Scholarship for 12th class students. Required: 75% marks in 10th, income proof.</p>
+              <div class="card-meta">
+                <span class="meta-item">🎓 For 12th Students</span>
+                <span class="meta-item">💰 Up to ₹10000</span>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="window.location.href='scholarship12.html'">
+                Open Form →
+              </button>
+            </div>
+
+            <div class="content-card">
+              <div class="card-header">
+                <h3 class="card-title">Emergency Healthcare</h3>
+                <span class="card-badge badge-urgent">Emergency</span>
+              </div>
+              <p class="card-content">Emergency medical assistance and SOPs. Includes ambulance, first aid, hospital contacts.</p>
+              <div class="card-meta">
+                <span class="meta-item">🏥 24/7 Available</span>
+                <span class="meta-item">🚑 Free Ambulance</span>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="window.location.href='emergency.html'">
+                Open Page →
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Column - Sharing Panel -->
+      <div class="sharing-panel">
+        <div class="sharing-header">
+          <h3>📤 Share This Portal</h3>
+          <p>Share with others on the same WiFi network</p>
+        </div>
+
+        <div class="qr-container">
+          <canvas id="qrCanvas" width="250" height="250"></canvas>
+          <p class="text-center mb-3" style="color: #666; font-size: 14px;">
+            Scan to access portal
+          </p>
+          <button id="downloadQR" class="btn btn-secondary btn-sm">
+            📥 Download QR Code
+          </button>
+        </div>
+
+        <button id="startBtn" class="btn btn-primary">
+          🚀 Start Sharing Portal
+        </button>
+        <button id="stopBtn" class="btn btn-danger hidden">
+          ⏹️ Stop Sharing
+        </button>
+
+        <div class="link-box hidden" id="linkContainer">
+          <p style="font-size: 12px; margin-bottom: 8px; color: #6c757d;">Share this link:</p>
+          <code id="shareLink">Loading...</code>
+          <button id="copyLink" class="btn btn-secondary btn-sm mt-3">
+            📋 Copy Link
+          </button>
+        </div>
+
+        <div class="devices-panel">
+          <h4 style="margin-bottom: 15px;">👥 Connected Devices</h4>
+          <ul class="device-list" id="deviceList">
+            <li class="device-item">No devices connected yet</li>
+          </ul>
+          
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number" id="devicesCount">0</div>
+              <div class="stat-label">Devices</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="contentViews">0</div>
+              <div class="stat-label">Views</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 25px; padding: 15px; background: #e8f5e9; border-radius: 10px;">
+          <h4 style="margin-bottom: 10px; color: #2e7d32;">✅ Sharing Tips</h4>
+          <ul style="font-size: 13px; color: #5a6268; padding-left: 20px;">
+            <li>All devices must be on same WiFi</li>
+            <li>Portal works 100% offline after loading</li>
+            <li>Forms save data locally</li>
+            <li>Stop sharing when done to save battery</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="portal-footer">
+      <p>Community Digital Portal • Designed for Digital Access for All • Works 100% Offline</p>
+      <p style="font-size: 12px; margin-top: 10px;">Last updated: <span id="currentDate"></span></p>
+    </footer>
+  </div>
+
+  <!-- Include Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="community.js"></script>
+  <script>
+    // Set current date
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+
+    // Navigation
+    function showSection(sectionId) {
+      // Hide all sections
+      document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.add('hidden');
+      });
+      
+      // Remove active from all tabs
+      document.querySelectorAll('.nav-tabs a').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Show selected section
+      document.getElementById(`${sectionId}-section`).classList.remove('hidden');
+      
+      // Set active tab
+      event.target.classList.add('active');
+      
+      // Load content if needed
+      if (window.communityPortal) {
+        communityPortal.loadSectionContent(sectionId);
+      }
+    }
+
+    // Initialize first section
+    showSection('announcements');
+  </script>
+</body>
+</html>

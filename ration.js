@@ -1,12 +1,12 @@
-import { initDB, saveApplication, getPendingSyncs, markSynced, updateSyncStatus } from "./db.js";
+import { initDB, saveApplication, getPendingSyncs, markSynced } from "./db.js";
 
 await initDB();
 
 const form = document.getElementById("rationForm");
 console.log("ration.js loaded, form =", form);
 
-// Sync function for ration
-async function syncRationToBackend(formData, dbId = null) {
+// ================= DIRECT SUBMISSION =================
+async function submitRationToBackend(formData, dbId = null) {
     try {
         const payload = {
     name: formData.name,
@@ -28,7 +28,7 @@ async function syncRationToBackend(formData, dbId = null) {
         }
         
         const result = await response.json();
-        console.log('Ration sync successful:', result);
+        console.log('Ration submitted successfully:', result);
         
         // Mark as synced in IndexedDB if we have a dbId
         if (dbId) {
@@ -36,8 +36,6 @@ async function syncRationToBackend(formData, dbId = null) {
         }
         
         return { success: true, data: result };
-    } catch (error) {
-        console.error('Ration sync failed:', error);
         
         // Update sync status to failed
         if (dbId) {
@@ -88,7 +86,7 @@ form.addEventListener("submit", async (e) => {
         name: document.getElementById("name").value,
         category: document.getElementById("category").value,
         ration_number: document.getElementById("ration_number").value,
-        family_members: Number(document.getElementById("family_members").value),
+        family_members: Number(document.getElementById("family_members").value)
     };
 
     try {
@@ -102,22 +100,21 @@ form.addEventListener("submit", async (e) => {
         
         console.log('Saved to IndexedDB with ID:', dbResult.id);
         
-        // Try to sync if online
+        // Try to submit if online
         if (navigator.onLine) {
-            const syncResult = await syncRationToBackend(data, dbResult.id);
+            const result = await submitRationToBackend(data, dbResult.id);
             
             if (syncResult.success) {
                 alert("Ration card application submitted successfully!");
             } else {
-                alert(`Ration card saved locally.\nWill automatically sync when possible.\nError: ${syncResult.error}`);
+                alert(` Saved locally. Will sync later.`);
             }
         } else {
-            alert("Ration card saved offline.\nWill sync automatically when you're back online.");
+            alert("Saved offline. Will sync when online.");
         }
         
-        form.reset();
     } catch (error) {
-        console.error('Error saving ration data:', error);
-        alert("Error saving ration card data");
+        console.error('Error:', error);
+        alert(" Error saving application");
     }
 });

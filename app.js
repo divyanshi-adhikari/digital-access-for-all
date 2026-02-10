@@ -1,6 +1,5 @@
-import { initDB, saveApplication, getPendingSyncs, markSynced, updateSyncStatus } from "./db.js";
-
-await initDB();
+// app.js - Scheme Application Form (SIMPLIFIED)
+console.log("Scheme Application Form Initializing...");
 
 const form = document.getElementById("govForm");
 console.log("govForm =", form);
@@ -9,8 +8,8 @@ if (!form) {
 }
 
 
-// Sync function for scheme
-async function syncSchemeToBackend(formData, dbId = null) {
+// ================= SUBMIT FUNCTION =================
+async function submitScheme(formData) {
     try {
         const payload = {
     name: formData.name,
@@ -18,7 +17,7 @@ async function syncSchemeToBackend(formData, dbId = null) {
     state: formData.state
 };
         
-        console.log('Sending scheme sync request:', payload);
+        console.log('Submitting scheme:', payload);
         
         const response = await fetch('http://localhost:4000/gov/scheme', {
             method: 'POST',
@@ -27,31 +26,20 @@ async function syncSchemeToBackend(formData, dbId = null) {
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            throw new Error(`Server error: ${response.status}`);
         }
         
         const result = await response.json();
-        console.log('Scheme sync successful:', result);
-        
-        // Mark as synced in IndexedDB if we have a dbId
-        if (dbId && result.success) {
-            await markSynced(dbId, result);
-        }
+        console.log('Scheme submitted:', result);
         
         return { success: true, data: result };
-    } catch (error) {
-        console.error('Scheme sync failed:', error);
         
         // Update sync status to failed
         if (dbId) {
             await updateSyncStatus(dbId, "sync_failed", error.message);
         }
         
-        return { 
-            success: false, 
-            error: error.message,
-            dbId: dbId
-        };
+        return { success: false, error: error.message };
     }
 }
 
@@ -90,7 +78,20 @@ form.addEventListener("submit", async (e) => {
         category: document.getElementById("category").value,
         state: document.getElementById("state").value,
     };
-
+    
+    // Validation
+    if (!formData.name || !formData.category || !formData.state || !formData.scheme_type) {
+        alert(" Please fill all fields");
+        return;
+    }
+    
+    // Disable submit button
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Submitting...";
+    submitBtn.style.opacity = "0.7";
+    
     try {
         // Save to IndexedDB first
         const dbResult = await saveApplication({
@@ -116,10 +117,14 @@ if (navigator.onLine) {
 }
 
         
-        form.reset();
     } catch (error) {
-        console.error('Error saving scheme data:', error);
-        alert(" Error saving scheme data");
+        console.error('Form error:', error);
+        alert(" Error submitting application");
+    } finally {
+        // Re-enable button
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+        submitBtn.style.opacity = "1";
     }
 }); 
 }

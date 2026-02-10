@@ -33,6 +33,29 @@ app.use("/gov", require("./routes/schemeRoutes"));
 app.use("/sync", require("./routes/syncRoutes"));
 console.log(" All routes loaded");
 
+// ========== COMMUNITY SHARING ==========  // <-- ADD THIS SECTION
+console.log("Enabling community sharing...");
+app.get("/community.html", (req, res) => {
+  console.log(` Community portal accessed from IP: ${req.ip}`);
+  res.sendFile(__dirname + "/community.html");
+});
+
+app.get("/api/community/status", (req, res) => {
+  res.json({
+    service: "community-sharing",
+    status: "active",
+    server: "Digital Access Portal",
+    ip: req.ip,
+    timestamp: new Date().toISOString(),
+    message: "Community sharing is enabled on this server"
+  });
+});
+
+app.get("/community", (req, res) => {
+  res.redirect("/community.html");
+});
+// =======================================
+
 // ========== ROOT ROUTE ==========
 app.get("/", (req, res) => {
   res.json({

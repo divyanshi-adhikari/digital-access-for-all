@@ -1,210 +1,83 @@
-// scholar12.js - COMPLETE VERSION
-console.log("12th Scholarship Form Loaded");
+// scholarship12.js - SIMPLIFIED WORKING VERSION
+console.log("12th Scholarship Form Initializing...");
 
-// ================= CONFIGURATION =================
-const CONFIG = {
-    BACKEND_URL: "http://localhost:4000",
-    SYNC_ENDPOINT: "/sync/submit",
-    SERVICE_TYPE: "scholar12",
-    
-    // Local storage keys
-    LOCAL_DB_NAME: "DigitalAccessDB",
-    LOCAL_STORE_NAME: "pendingSubmissions",
-    
-    // Form field IDs
-    FORM_IDS: {
-        FORM: "scholarship12Form",
-        NAME: "name",
-        COLLEGE: "college",
-        MARKS: "marks",
-        YEAR: "year"
-    }
-};
+const form = document.getElementById("scholarship12Form");
 
-// ================= INDEXEDDB SETUP =================
-let db;
-
-function initIndexedDB() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(CONFIG.LOCAL_DB_NAME, 1);
-
-        request.onerror = (event) => {
-            console.error("IndexedDB error:", event.target.error);
-            reject("Failed to open database");
+// ================= SIMPLE SUBMIT FUNCTION =================
+async function submitScholarship12(formData) {
+    try {
+        const payload = {
+            name: formData.name,
+            college: formData.college,
+            marks: formData.marks,
+            year: formData.year,
+            status: 'PENDING'
         };
-
-        request.onsuccess = (event) => {
-            db = event.target.result;
-            console.log("IndexedDB opened successfully");
-            resolve();
-        };
-
-        request.onupgradeneeded = (event) => {
-            const db = event.target.result;
-            if (!db.objectStoreNames.contains(CONFIG.LOCAL_STORE_NAME)) {
-                const store = db.createObjectStore(CONFIG.LOCAL_STORE_NAME, { 
-                    keyPath: 'id',
-                    autoIncrement: true 
-                });
-                store.createIndex('service_type', 'service_type', { unique: false });
-                store.createIndex('timestamp', 'timestamp', { unique: false });
-                console.log("Object store created");
-            }
-        };
-    });
-}
-
-// ================= FORM HANDLING =================
-function getFormData() {
-    return {
-        name: document.getElementById(CONFIG.FORM_IDS.NAME).value.trim(),
-        college: document.getElementById(CONFIG.FORM_IDS.COLLEGE).value.trim(),
-        marks: parseFloat(document.getElementById(CONFIG.FORM_IDS.MARKS).value),
-        year: document.getElementById(CONFIG.FORM_IDS.YEAR).value.trim()
-    };
-}
-
-function validateFormData(data) {
-    const errors = [];
-    
-    if (!data.name) errors.push("Name is required");
-    if (!data.college) errors.push("College name is required");
-    if (isNaN(data.marks) || data.marks < 0 || data.marks > 100) {
-        errors.push("Marks must be between 0 and 100");
-    }
-    if (!data.year || data.year.length !== 4) {
-        errors.push("Year must be 4 digits (e.g., 2024)");
-    }
-    
-    return errors;
-}
-
-// ================= OFFLINE STORAGE =================
-function saveToIndexedDB(formData) {
-    return new Promise((resolve, reject) => {
-        if (!db) {
-            reject("Database not initialized");
-            return;
+        
+        console.log('Submitting scholarship12:', payload);
+        
+        // Try direct endpoint first
+        const response = await fetch('http://localhost:4000/gov/scholar12', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
         }
-
-        const transaction = db.transaction([CONFIG.LOCAL_STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(CONFIG.LOCAL_STORE_NAME);
         
-        const submission = {
-            service_type: CONFIG.SERVICE_TYPE,
-            form_data: formData,
-            timestamp: new Date().toISOString(),
-            status: 'pending'
-        };
-
-        const request = store.add(submission);
-
-        request.onsuccess = () => {
-            console.log("Saved to IndexedDB with ID:", request.result);
-            resolve(request.result);
-        };
-
-        request.onerror = (event) => {
-            console.error("Error saving to IndexedDB:", event.target.error);
-            reject(event.target.error);
-        };
-    });
-}
-
-// ================= SYNC WITH BACKEND =================
-async function syncWithBackend() {
-    if (!db) {
-        console.log("Database not ready, skipping sync");
-        return;
-    }
-
-    const transaction = db.transaction([CONFIG.LOCAL_STORE_NAME], 'readonly');
-    const store = transaction.objectStore(CONFIG.LOCAL_STORE_NAME);
-    const index = store.index('status');
-    const request = index.getAll('pending');
-
-    request.onsuccess = async (event) => {
-        const pendingItems = event.target.result;
+        const result = await response.json();
+        console.log('Submission successful:', result);
         
-        if (pendingItems.length === 0) {
-            console.log("No pending submissions to sync");
-            return;
-        }
-
-        console.log(`Found ${pendingItems.length} pending submissions to sync`);
-
-        for (const item of pendingItems) {
-            try {
-                const response = await fetch(`${CONFIG.BACKEND_URL}${CONFIG.SYNC_ENDPOINT}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        service_type: item.service_type,
-                        form_data: item.form_data
-                    })
-                });
-
-                if (response.ok) {
-                    console.log(`Successfully synced item ${item.id}`);
-                    // Mark as synced
-                    await markAsSynced(item.id);
-                } else {
-                    console.error(`Failed to sync item ${item.id}:`, await response.text());
-                }
-            } catch (error) {
-                console.error(`Error syncing item ${item.id}:`, error);
-            }
-        }
-    };
-}
-
-function markAsSynced(id) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction([CONFIG.LOCAL_STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(CONFIG.LOCAL_STORE_NAME);
+        return { success: true, data: result };
         
-        const getRequest = store.get(id);
+    } catch (error) {
+        console.error('Submission failed:', error);
         
-        getRequest.onsuccess = () => {
-            const item = getRequest.result;
-            item.status = 'synced';
-            item.synced_at = new Date().toISOString();
-            
-            const updateRequest = store.put(item);
-            
-            updateRequest.onsuccess = () => {
-                console.log(`Marked item ${id} as synced`);
-                resolve();
+        // Try sync endpoint as fallback
+        try {
+            const syncPayload = {
+                service_type: "scholar12",
+                form_data: formData
             };
             
-            updateRequest.onerror = (event) => {
-                console.error("Error marking as synced:", event.target.error);
-                reject(event.target.error);
-            };
-        };
+            const syncResponse = await fetch('http://localhost:4000/sync/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(syncPayload)
+            });
+            
+            if (syncResponse.ok) {
+                const syncResult = await syncResponse.json();
+                return { success: true, data: syncResult };
+            }
+        } catch (syncError) {
+            console.error('Sync also failed:', syncError);
+        }
         
-        getRequest.onerror = (event) => {
-            console.error("Error getting item:", event.target.error);
-            reject(event.target.error);
-        };
-    });
+        return { success: false, error: error.message };
+    }
 }
 
 // ================= FORM SUBMISSION =================
-async function handleSubmit(event) {
-    event.preventDefault();
-    console.log("Form submission started");
-
-    const formData = getFormData();
-    console.log("Form data:", formData);
-
-    const errors = validateFormData(formData);
-    if (errors.length > 0) {
-        alert(" Please fix the following errors:\n\n" + errors.join("\n"));
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    // Get form data
+    const formData = {
+        name: document.getElementById("name").value.trim(),
+        college: document.getElementById("college").value.trim(),
+        marks: Number(document.getElementById("marks").value),
+        year: document.getElementById("year").value.trim()
+    };
+    
+    // Basic validation
+    if (!formData.name || !formData.college || !formData.marks || !formData.year) {
+        alert(" Please fill all fields");
         return;
     }
+<<<<<<< HEAD
 
     try {
         // Try to submit online first
@@ -274,60 +147,118 @@ function updateOnlineStatus() {
 // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', async function() {
     console.log("Initializing 12th Scholarship form...");
+=======
+    
+    if (formData.marks < 0 || formData.marks > 100) {
+        alert(" Marks must be between 0-100");
+        return;
+    }
+    
+    // Disable submit button
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Submitting...";
+    submitBtn.style.opacity = "0.7";
+>>>>>>> 70a134ecefd56109f604a115ee538915c2164a81
     
     try {
-        // Initialize IndexedDB
-        await initIndexedDB();
-        console.log("IndexedDB initialized");
-        
-        // Set up form submission
-        const form = document.getElementById(CONFIG.FORM_IDS.FORM);
-        if (form) {
-            form.addEventListener('submit', handleSubmit);
-            console.log("Form event listener added");
-        } else {
-            console.error("Form not found with ID:", CONFIG.FORM_IDS.FORM);
-        }
-        
-        // Set up network detection
-        updateOnlineStatus();
-        window.addEventListener('online', updateOnlineStatus);
-        window.addEventListener('offline', updateOnlineStatus);
-        
-        // Try to sync any pending submissions
         if (navigator.onLine) {
-            setTimeout(() => syncWithBackend(), 2000);
+            // Try online submission
+            const result = await submitScholarship12(formData);
+            
+            if (result.success) {
+                alert(` Scholarship 12th submitted successfully!\nApplication ID: ${result.data.id || result.data.applicationId}`);
+                form.reset();
+            } else {
+                // Save locally if online submission failed
+                saveToLocalStorage(formData);
+                alert(` Saved locally. Will sync later.\nError: ${result.error}`);
+            }
+        } else {
+            // Save offline
+            saveToLocalStorage(formData);
+            alert("Saved offline. Will sync when back online.");
+            form.reset();
         }
-        
-        console.log("12th Scholarship form initialized successfully");
         
     } catch (error) {
-        console.error("Initialization failed:", error);
-        alert("Error initializing form. Please refresh the page.");
+        console.error('Form submission error:', error);
+        alert(" Error submitting application");
+    } finally {
+        // Re-enable button
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+        submitBtn.style.opacity = "1";
     }
 });
 
-// ================= UTILITY FUNCTIONS =================
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        background-color: ${type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#3498db'};
-        color: white;
-        border-radius: 5px;
-        z-index: 1000;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        animation: slideIn 0.3s ease;
-    `;
-    
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
+// ================= LOCAL STORAGE FALLBACK =================
+function saveToLocalStorage(data) {
+    try {
+        const pendingApps = JSON.parse(localStorage.getItem('pendingScholarship12') || '[]');
+        pendingApps.push({
+            ...data,
+            timestamp: new Date().toISOString(),
+            status: 'PENDING'
+        });
+        localStorage.setItem('pendingScholarship12', JSON.stringify(pendingApps));
+        console.log('Saved to localStorage:', pendingApps.length, 'pending apps');
+    } catch (e) {
+        console.error('Failed to save locally:', e);
+    }
 }
+
+// ================= AUTO-SYNC WHEN ONLINE =================
+window.addEventListener('online', async () => {
+    const pending = JSON.parse(localStorage.getItem('pendingScholarship12') || '[]');
+    if (pending.length > 0) {
+        console.log('Online - found', pending.length, 'pending apps to sync');
+        
+        for (const app of pending) {
+            try {
+                const result = await submitScholarship12(app);
+                if (result.success) {
+                    // Remove from pending
+                    const updated = pending.filter(a => a.timestamp !== app.timestamp);
+                    localStorage.setItem('pendingScholarship12', JSON.stringify(updated));
+                    console.log('Synced pending app:', app.name);
+                }
+            } catch (error) {
+                console.error('Failed to sync pending app:', error);
+            }
+        }
+    }
+});
+
+// ================= INITIALIZE =================
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("12th Scholarship Form Ready");
+    
+    // Check online status
+    const statusElement = document.createElement('div');
+    statusElement.style.cssText = `
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        padding: 5px 10px;
+        background: ${navigator.onLine ? '#2ecc71' : '#e74c3c'};
+        color: white;
+        border-radius: 3px;
+        font-size: 12px;
+        z-index: 1000;
+    `;
+    statusElement.textContent = navigator.onLine ? ' Online' : ' Offline';
+    document.body.appendChild(statusElement);
+    
+    // Update status when network changes
+    window.addEventListener('online', () => {
+        statusElement.textContent = ' Online';
+        statusElement.style.background = '#2ecc71';
+    });
+    
+    window.addEventListener('offline', () => {
+        statusElement.textContent = ' Offline';
+        statusElement.style.background = '#e74c3c';
+    });
+});
