@@ -303,7 +303,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add refresh button (but it won't lose status now)
     const refreshBtn = document.createElement('button');
-    refreshBtn.textContent = '🔄 Refresh';
+    refreshBtn.textContent = ' Refresh';
     refreshBtn.style.cssText = `
         position: fixed;
         bottom: 20px;
@@ -330,3 +330,242 @@ window.logout = function() {
 };
 
 console.log('Admin.js loaded - Status persists through refresh');
+
+// ================= AUTO-REFRESH SYSTEM =================
+let autoRefreshEnabled = true;
+let refreshInterval = null;
+
+// Function to start auto-refresh
+function startAutoRefresh(intervalSeconds = 5) {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+    
+    refreshInterval = setInterval(() => {
+        if (autoRefreshEnabled && navigator.onLine) {
+            console.log(' Auto-refreshing dashboard...');
+            loadAllData();
+        }
+    }, intervalSeconds * 1000);
+    
+    console.log(` Auto-refresh started (every ${intervalSeconds}s)`);
+}
+
+// Function to stop auto-refresh
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+        console.log(' Auto-refresh stopped');
+    }
+}
+
+// Listen for sync events from form pages
+function setupSyncListeners() {
+    // Method 1: localStorage events (works across tabs)
+    window.addEventListener('storage', function(event) {
+        if (event.key === 'last_sync_time') {
+            const syncTime = parseInt(event.newValue);
+            const now = Date.now();
+            
+            // If sync happened less than 10 seconds ago
+            if (now - syncTime < 10000) {
+                console.log(' Sync detected in another tab! Refreshing...');
+                loadAllData();
+            }
+        }
+    });
+    
+    // Method 2: BroadcastChannel (modern browsers)
+    if (typeof BroadcastChannel !== 'undefined') {
+        const syncChannel = new BroadcastChannel('sync_channel');
+        syncChannel.onmessage = function(event) {
+            if (event.data.type === 'sync_complete') {
+                console.log(` ${event.data.count} apps synced, refreshing...`);
+                loadAllData();
+            }
+        };
+    }
+    
+    // Method 3: Page visibility (user comes back to tab)
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && navigator.onLine) {
+            console.log(' Page became visible, refreshing...');
+            setTimeout(loadAllData, 1000);
+        }
+    });
+}
+
+// Add auto-refresh controls to dashboard
+function addAutoRefreshControls() {
+    const controlsDiv = document.createElement('div');
+    controlsDiv.style.cssText = `
+        position: fixed;
+        bottom: 60px;
+        right: 20px;
+        background: white;
+        padding: 10px 15px;
+        border-radius: 5px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+        border: 1px solid #ddd;
+        font-size: 14px;
+    `;
+    
+    controlsDiv.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+            <input type="checkbox" id="autoRefreshToggle" checked>
+            <label for="autoRefreshToggle" style="font-weight: bold;">Auto-refresh (5s)</label>
+        </div>
+        <div style="display: flex; gap: 5px;">
+            <button id="refreshNowBtn" style="background: #4CAF50; color: white; border: none; 
+                    padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 12px;">
+                 Refresh Now
+            </button>
+            <button id="testSyncBtn" style="background: #9C27B0; color: white; border: none; 
+                    padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 12px;">
+                 Test Sync
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(controlsDiv);
+    
+    // Toggle auto-refresh
+    const toggle = document.getElementById('autoRefreshToggle');
+    toggle.checked = autoRefreshEnabled;
+    toggle.onchange = function() {
+        autoRefreshEnabled = this.checked;
+        if (autoRefreshEnabled) {
+            startAutoRefresh(5);
+            showNotification(' Auto-refresh enabled', 'success');
+        } else {
+            stopAutoRefresh();
+            showNotification('Auto-refresh paused', 'warning');
+        }
+    };
+    
+    // Manual refresh button
+    document.getElementById('refreshNowBtn').onclick = function() {
+        loadAllData();
+        showNotification(' Manual refresh triggered', 'info');
+    };
+    
+    // Test sync button
+    document.getElementById('testSyncBtn').onclick = function() {
+        testSyncNotification();
+    };
+}
+
+// Show notification
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#4CAF50' : 
+                     type === 'error' ? '#f44336' : 
+                     type === 'warning' ? '#ff9800' : '#2196F3'};
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 10000;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        font-weight: bold;
+        animation: slideIn 0.3s ease;
+    `;
+    
+    // Add CSS animation if not exists
+    if (!document.getElementById('notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }
+    }, 3000);
+}
+
+// Test sync notification
+function testSyncNotification() {
+    // Simulate a sync event
+    localStorage.setItem('last_sync_time', Date.now());
+    
+    // Also send broadcast message
+    if (typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel('sync_channel');
+        channel.postMessage({ 
+            type: 'sync_complete', 
+            count: 3,
+            timestamp: new Date().toISOString()
+        });
+        setTimeout(() => channel.close(), 100);
+    }
+    
+    showNotification(' Test sync triggered! Dashboard should refresh...', 'info');
+}
+
+// Add last update time display
+function addLastUpdateDisplay() {
+    const updateDiv = document.createElement('div');
+    updateDiv.id = 'lastUpdateDisplay';
+    updateDiv.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        font-size: 12px;
+        color: #666;
+        background: white;
+        padding: 5px 10px;
+        border-radius: 3px;
+        border: 1px solid #ddd;
+        font-family: monospace;
+    `;
+    updateDiv.textContent = 'Last update: Just now';
+    document.body.appendChild(updateDiv);
+    
+    // Update every second
+    setInterval(() => {
+        const lastUpdate = window.lastDashboardUpdate || 0;
+        const secondsAgo = Math.floor((Date.now() - lastUpdate) / 1000);
+        
+        let text = 'Never';
+        if (secondsAgo < 60) {
+            text = `${secondsAgo}s ago`;
+        } else if (secondsAgo < 3600) {
+            text = `${Math.floor(secondsAgo/60)}m ago`;
+        }
+        
+        updateDiv.textContent = `Last update: ${text}`;
+    }, 1000);
+}
+
+// Modify your existing loadAllData to update timestamp
+const originalLoadAllData = loadAllData;
+window.loadAllData = async function() {
+    await originalLoadAllData();
+    window.lastDashboardUpdate = Date.now();
+};
