@@ -41,12 +41,15 @@ Tools      : Git, Ngrok
 
 ### Service Portals
 
+
 | Module | Purpose |
 |--------|---------|
+| Government Schemes | General scheme application forms |
+| Scholarship (Class 10) | Offline Class 10 scholarship applications |
+| Scholarship (Class 12) | Offline Class 12 scholarship applications |
 | Ration Card | Offline ration application |
 | Emergency Healthcare | Medical information & contacts |
 | Community Sharing | QR code-based resource sharing |
-| Government Schemes | General scheme application forms |
 
 ### Administration
 - Secure admin authentication
@@ -56,7 +59,7 @@ Tools      : Git, Ngrok
 ---
 
 ## Project Structure
-## Project Structure
+
 
 ```text
 digital-access-for-all/
@@ -98,7 +101,7 @@ digital-access-for-all/
 ├── .gitignore            # Git ignore
 └── ngrok.exe              # Tunneling tool
 
-
+ ```
 ---
 
 ## Getting Started
