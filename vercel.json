@@ -2,6 +2,8 @@
   "rewrites": [
     { "source": "/", "destination": "/home.html" },
     { "source": "/admin", "destination": "/admin-lock.html" },
-    { "source": "/admin/:path*", "destination": "/admin-lock.html" }
+    { "source": "/admin/:path*", "destination": "/admin-lock.html" },
+    { "source": "/gov/:path*", "destination": "/server.js" },
+    { "source": "/sync/:path*", "destination": "/server.js" }
   ]
 }
