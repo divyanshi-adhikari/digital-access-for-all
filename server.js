@@ -123,4 +123,5 @@ if (require.main === module) {
 
 
 // ===== EXPORT FOR VERCEL =====
-module.exports = app; // Don't use serverless-http, just export app
+const serverless = require("serverless-http");
+module.exports = serverless(app);
