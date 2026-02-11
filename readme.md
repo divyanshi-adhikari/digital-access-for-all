@@ -1,6 +1,9 @@
 # Digital Access For All
-
-This project aims to make digital content easy to use and inclusive for everyone — especially those who might face challenges accessing important services online.A full-stack offline-first Progressive Web Application bridging the digital divide by enabling access to essential services—scholarships, ration distribution, emergency healthcare, and community resources—with or without internet connectivity. 
+<p>
+<em>
+This project aims to make digital content easy and inclusive for everyone — especially those who might face challenges accessing important services online. A full-stack offline-first Progressive Web Application bridging the digital divide by enabling access to essential services—scholarships, ration distribution, emergency healthcare, and community resources—with or without internet connectivity. 
+</em>
+</p>
 ---
 
 ## About The Project
@@ -53,45 +56,48 @@ Tools      : Git, Ngrok
 ---
 
 ## Project Structure
+## Project Structure
 
+```text
 digital-access-for-all/
 │
 ├── controllers/          # Business logic
 ├── models/              # Database models
-├── routes/             # API endpoints
-├── node_modules/       # Dependencies
-├── backup/             # Database backups
+├── routes/              # API endpoints
+├── node_modules/        # Dependencies
+├── backup/              # Database backups
 │
-├── index.html          # Landing page
-├── home.html           # Main dashboard
-├── community.html      # QR sharing portal
-├── emergency.html      # Healthcare info
-├── ration.html         # Ration services
-├── scholarship10.html  # Class 10 scholarship
-├── scholarship12.html  # Class 12 scholarship
-├── admin-login.html    # Admin authentication
-├── admin.html          # Admin dashboard
+├── index.html            # Landing page
+├── home.html             # Main dashboard
+├── community.html        # QR sharing portal
+├── emergency.html        # Healthcare info
+├── ration.html           # Ration services
+├── scholarship10.html    # Class 10 scholarship
+├── scholarship12.html    # Class 12 scholarship
+├── admin-login.html      # Admin authentication
+├── admin.html            # Admin dashboard
 │
-├── app.js              # Main PWA logic
-├── db.js               # IndexedDB handler
-├── sw.js               # Service worker
-├── admin.js            # Admin functions
-├── ration.js           # Ration form logic
-├── scholarship10.js    # Class 10 logic
-├── scholarship12.js    # Class 12 logic
-├── community.js        # QR generator
+├── app.js                # Main PWA logic
+├── db.js                 # IndexedDB handler
+├── sw.js                 # Service worker
+├── admin.js              # Admin functions
+├── ration.js             # Ration form logic
+├── scholarship10.js      # Class 10 logic
+├── scholarship12.js      # Class 12 logic
+├── community.js          # QR generator
 │
-├── server.js           # Express server
-├── database.js         # SQLite setup
-├── mock-server.js      # Development server
+├── server.js             # Express server
+├── database.js           # SQLite setup
+├── mock-server.js        # Development server
 │
-├── style.css           # Unified styling
-├── manifest.json       # PWA config
+├── style.css             # Unified styling
+├── manifest.json         # PWA config
 │
-├── package.json        # Dependencies
-├── package-lock.json   # Lock file
-├── .gitignore         # Git ignore
-└── ngrok.exe          # Tunneling tool
+├── package.json          # Dependencies
+├── package-lock.json     # Lock file
+├── .gitignore            # Git ignore
+└── ngrok.exe              # Tunneling tool
+
 
 ---
 
