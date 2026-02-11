@@ -2,53 +2,35 @@ let db;
 
 export function initDB() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open("DigitalDivideDB", 2); // Changed to version 2 for schema upgrade
+        const request = indexedDB.open("DigitalDivideDB", 3);
 
         request.onupgradeneeded = (e) => {
             db = e.target.result;
             
-            // Create object store if it doesn't exist
             if (!db.objectStoreNames.contains("applications")) {
                 const store = db.createObjectStore("applications", {
                     keyPath: "id",
-                    autoIncrement: true
+                    autoIncrement: false // CHANGED: false because you're providing custom IDs
                 });
+                
+                store.createIndex("formType", "formType", { unique: false });
+                store.createIndex("synced", "synced", { unique: false });
+                store.createIndex("status", "status", { unique: false });
+                store.createIndex("createdAt", "createdAt", { unique: false });
                 
                 console.log("Object store created");
             }
-            
-            // Add new fields to existing data if upgrading
-            const transaction = e.target.transaction;
-            const store = transaction.objectStore("applications");
-            const getAllRequest = store.getAll();
-            
-            getAllRequest.onsuccess = () => {
-                const allItems = getAllRequest.result;
-                allItems.forEach(item => {
-                    // Add sync fields if they don't exist
-                    if (item.synced === undefined) {
-                        item.synced = false;
-                        store.put(item);
-                    }
-                    if (item.status === undefined) {
-                        item.status = "pending";
-                        store.put(item);
-                    }
-                    if (item.syncAttempts === undefined) {
-                        item.syncAttempts = 0;
-                        store.put(item);
-                    }
-                });
-            };
         };
 
         request.onsuccess = (e) => {
             db = e.target.result;
-            console.log("IndexedDB initialized successfully");
+            console.log("IndexedDB initialized");
             resolve(db);
         };
 
-        request.onerror = () => reject("IndexedDB error");
+        request.onerror = (e) => {
+            reject("IndexedDB error: " + e.target.error);
+        };
     });
 }
 
@@ -57,25 +39,29 @@ export function saveApplication(data) {
         const tx = db.transaction("applications", "readwrite");
         const store = tx.objectStore("applications");
         
-        // Add sync tracking fields
-        const appWithSync = {
+        // CRITICAL FIX: Use the ID you're providing, don't auto-generate
+        const appToSave = {
             ...data,
             synced: false,
-            status: data.status || "pending",
+            status: data.status || "pending_sync",
             syncAttempts: 0,
             lastSyncAttempt: null,
             backendId: null,
-            createdAt: data.createdAt || new Date()
+            updatedAt: new Date().toISOString()
         };
 
-        const req = store.add(appWithSync);
+        // Use put() instead of add() to handle your custom IDs
+        const req = store.put(appToSave);
 
         req.onsuccess = () => {
-            console.log("Application saved with ID:", req.result);
-            resolve({ id: req.result, ...appWithSync });
+            console.log("✅ Saved:", appToSave.id, appToSave.name);
+            resolve(appToSave);
         };
         
-        req.onerror = () => reject("Save failed");
+        req.onerror = (e) => {
+            console.error("❌ Save failed:", e.target.error);
+            reject("Save failed: " + e.target.error);
+        };
     });
 }
 
@@ -86,13 +72,11 @@ export function getAllApplications() {
         const req = store.getAll();
 
         req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject("Failed to read applications");
+        req.onerror = (e) => reject("Failed to read: " + e.target.error);
     });
 }
 
-// ========== NEW SYNC FUNCTIONS ==========
-
-// Get all applications that haven't been synced
+// ============= CRITICAL FIX: This is your problem area =============
 export function getPendingSyncs() {
     return new Promise((resolve, reject) => {
         const tx = db.transaction("applications", "readonly");
@@ -101,57 +85,30 @@ export function getPendingSyncs() {
         
         req.onsuccess = () => {
             const allApps = req.result;
-            // Filter applications that are not synced
-            const pending = allApps.filter(app => !app.synced);
-            console.log(`Found ${pending.length} pending syncs out of ${allApps.length} total applications`);
+            
+            // SIMPLE, CLEAR FILTERING
+            const pending = allApps.filter(app => {
+                // Your app saves with status "pending_sync" - this should catch them
+                if (app.status === "pending_sync") return true;
+                if (app.status === "sync_failed") return true;
+                if (app.synced === false) return true;
+                if (app.synced === "false") return true; // Handle strings
+                if (app.synced === undefined && app.status === undefined) return true;
+                
+                return false;
+            });
+            
+            console.log(`📊 Pending syncs: ${pending.length}/${allApps.length}`);
             resolve(pending);
         };
 
-        req.onerror = () => reject("Failed to get pending syncs");
-    });
-}
-
-// Mark an application as synced
-export function markSynced(id, backendData = {}) {
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction("applications", "readwrite");
-        const store = tx.objectStore("applications");
-        
-        // First get the application
-        const getRequest = store.get(id);
-
-        getRequest.onsuccess = () => {
-            const application = getRequest.result;
-            if (!application) {
-                reject("Application not found");
-                return;
-            }
-
-            // Update sync status
-            application.synced = true;
-            application.status = "synced";
-            application.syncAttempts = (application.syncAttempts || 0) + 1;
-            application.lastSyncAttempt = new Date();
-            application.backendId = backendData.application_id || backendData.id;
-            application.syncResponse = backendData;
-
-            // Save updated application
-            const updateRequest = store.put(application);
-
-            updateRequest.onsuccess = () => {
-                console.log(`Application ${id} marked as synced`);
-                resolve(application);
-            };
-
-            updateRequest.onerror = () => reject("Failed to mark as synced");
+        req.onerror = (e) => {
+            reject("Failed to get pending: " + e.target.error);
         };
-
-        getRequest.onerror = () => reject("Failed to get application");
     });
 }
 
-// Update sync status (for retry logic)
-export function updateSyncStatus(id, status, error = null) {
+export function updateSyncStatus(id, status, response = null) {
     return new Promise((resolve, reject) => {
         const tx = db.transaction("applications", "readwrite");
         const store = tx.objectStore("applications");
@@ -159,35 +116,57 @@ export function updateSyncStatus(id, status, error = null) {
         const getRequest = store.get(id);
 
         getRequest.onsuccess = () => {
-            const application = getRequest.result;
-            if (!application) {
-                reject("Application not found");
-                return;
-            }
-
-            application.status = status;
-            application.syncAttempts = (application.syncAttempts || 0) + 1;
-            application.lastSyncAttempt = new Date();
+            const app = getRequest.result;
             
-            if (error) {
-                application.lastError = error.message || error;
+            if (!app) {
+                console.error("❌ Not found:", id);
+                reject("Application not found");
+                return;
             }
 
-            const updateRequest = store.put(application);
+            // Update fields
+            app.status = status;
+            app.lastSyncAttempt = new Date().toISOString();
+            app.syncAttempts = (app.syncAttempts || 0) + 1;
+            
+            if (status === "synced") {
+                app.synced = true;
+                app.backendId = response ? (response.application_id || response.id) : null;
+                app.syncResponse = response;
+            } else {
+                app.synced = false;
+                app.lastError = response;
+            }
+            
+            app.updatedAt = new Date().toISOString();
+
+            const updateRequest = store.put(app);
 
             updateRequest.onsuccess = () => {
-                console.log(`Application ${id} status updated to: ${status}`);
-                resolve(application);
+                console.log(`✅ Updated ${id}: ${status}`);
+                resolve(app);
             };
 
-            updateRequest.onerror = () => reject("Failed to update status");
+            updateRequest.onerror = (e) => {
+                reject("Update failed: " + e.target.error);
+            };
         };
 
-        getRequest.onerror = () => reject("Failed to get application");
+        getRequest.onerror = (e) => {
+            reject("Get failed: " + e.target.error);
+        };
     });
 }
 
-// Get applications by form type
+// Keep these for backward compatibility
+export function markSynced(id, backendData = {}) {
+    return updateSyncStatus(id, "synced", JSON.stringify(backendData));
+}
+
+export function incrementSyncAttempts(id, error = null) {
+    return updateSyncStatus(id, "retrying", error?.message || error);
+}
+
 export function getApplicationsByType(formType) {
     return new Promise((resolve, reject) => {
         const tx = db.transaction("applications", "readonly");
@@ -195,16 +174,16 @@ export function getApplicationsByType(formType) {
         const req = store.getAll();
         
         req.onsuccess = () => {
-            const allApps = req.result;
-            const filtered = allApps.filter(app => app.formType === formType);
+            const filtered = req.result.filter(app => app.formType === formType);
             resolve(filtered);
         };
 
-        req.onerror = () => reject("Failed to get applications by type");
+        req.onerror = (e) => {
+            reject("Failed to get by type: " + e.target.error);
+        };
     });
 }
 
-// Delete application (optional, for cleanup)
 export function deleteApplication(id) {
     return new Promise((resolve, reject) => {
         const tx = db.transaction("applications", "readwrite");
@@ -212,6 +191,18 @@ export function deleteApplication(id) {
         const req = store.delete(id);
 
         req.onsuccess = () => resolve();
-        req.onerror = () => reject("Failed to delete application");
+        req.onerror = (e) => reject("Delete failed: " + e.target.error);
+    });
+}
+
+// Helper to clear DB (use carefully!)
+export function clearAllApplications() {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction("applications", "readwrite");
+        const store = tx.objectStore("applications");
+        const req = store.clear();
+
+        req.onsuccess = () => resolve();
+        req.onerror = (e) => reject("Clear failed: " + e.target.error);
     });
 }
