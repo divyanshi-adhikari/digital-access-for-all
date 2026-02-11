@@ -121,6 +121,7 @@ npm run dev
 Visit http://localhost:4000
 
 ---
+## Offline Synchronization
 
 1. When the user is offline, all form submissions are safely stored in the browser using IndexedDB.
 2. If the internet connection is unavailable, submissions are automatically queued locally.
