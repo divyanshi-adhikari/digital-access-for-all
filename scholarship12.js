@@ -1,9 +1,9 @@
 // scholarship12.js - 12th Scholarship Form (OFFLINE-FIRST ENHANCED)
-console.log("✅ 12th Scholarship Form Initializing...");
+console.log(" 12th Scholarship Form Initializing...");
 
 const form = document.getElementById("scholarship12Form");
 if (!form) {
-    console.error("❌ 12th Scholarship form not found!");
+    console.error(" 12th Scholarship form not found!");
     alert("Error: Form not found on page. Please refresh.");
 }
 
@@ -44,9 +44,9 @@ function showSyncNotification(message, type = 'info', duration = 5000) {
     
     notification.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
-            <span>${type === 'success' ? '✅' : 
-                   type === 'error' ? '❌' : 
-                   type === 'warning' ? '⚠️' : '🔄'}</span>
+            <span>${type === 'success' ? '' : 
+                   type === 'error' ? '' : 
+                   type === 'warning' ? '' : '🔄'}</span>
             <span>${message}</span>
         </div>
     `;
@@ -100,10 +100,10 @@ function saveToLocalStorage(formData) {
         pendingApps.push(appWithId);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(pendingApps));
         
-        console.log('✅ Saved locally with ID:', appWithId.id);
+        console.log(' Saved locally with ID:', appWithId.id);
         return { success: true, id: appWithId.id };
     } catch (error) {
-        console.error('❌ Local storage error:', error);
+        console.error(' Local storage error:', error);
         return { success: false, error: error.message };
     }
 }
@@ -200,7 +200,7 @@ function validateForm(formData) {
 
 // ================= FAST SUBMIT TO BACKEND =================
 async function submitToBackend(formData, dbId = null, retryCount = 0) {
-    console.log(`📤 Submitting 12th scholarship (attempt ${retryCount + 1})`);
+    console.log(` Submitting 12th scholarship (attempt ${retryCount + 1})`);
     
     try {
         const payload = {
@@ -211,7 +211,7 @@ async function submitToBackend(formData, dbId = null, retryCount = 0) {
             submission_time: new Date().toISOString()
         };
         
-        console.log('📨 Payload:', payload);
+        console.log(' Payload:', payload);
         
         // Add timeout for faster failure
         const controller = new AbortController();
@@ -227,11 +227,11 @@ async function submitToBackend(formData, dbId = null, retryCount = 0) {
             signal: controller.signal
         }).finally(() => clearTimeout(timeoutId));
         
-        console.log(`📥 Response: ${response.status} ${response.statusText}`);
+        console.log(` Response: ${response.status} ${response.statusText}`);
         
         if (response.ok) {
             const result = await response.json();
-            console.log('✅ Backend submission successful:', result);
+            console.log(' Backend submission successful:', result);
             
             if (dbId) {
                 await updateLocalStatus(dbId, 'synced', JSON.stringify(result));
@@ -251,7 +251,7 @@ async function submitToBackend(formData, dbId = null, retryCount = 0) {
                 }
             }
             
-            console.error('❌ Server error:', errorText);
+            console.error(' Server error:', errorText);
             
             // Retry on server errors
             if (retryCount < CONFIG.MAX_RETRIES && response.status >= 500) {
@@ -268,10 +268,10 @@ async function submitToBackend(formData, dbId = null, retryCount = 0) {
         }
         
     } catch (error) {
-        console.error('🚨 Network error:', error.message);
+        console.error(' Network error:', error.message);
         
         if (retryCount < CONFIG.MAX_RETRIES) {
-            console.log(`⏳ Retrying network error in ${CONFIG.RETRY_DELAY}ms...`);
+            console.log(`Retrying network error in ${CONFIG.RETRY_DELAY}ms...`);
             await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
             return await submitToBackend(formData, dbId, retryCount + 1);
         }
@@ -291,8 +291,8 @@ async function performAutoSync() {
     }
     
     isSyncing = true;
-    console.log('🔄 Starting FAST auto-sync for 12th scholarships...');
-    showSyncNotification('🔄 Syncing offline scholarships...', 'info', 3000);
+    console.log(' Starting FAST auto-sync for 12th scholarships...');
+    showSyncNotification(' Syncing offline scholarships...', 'info', 3000);
     
     try {
         const pendingApps = getPendingApplications();
@@ -300,7 +300,7 @@ async function performAutoSync() {
         console.log(`Found ${pendingApps.length} 12th scholarship applications to sync`);
         
         if (pendingApps.length === 0) {
-            showSyncNotification('✅ All scholarships already synced', 'success', 3000);
+            showSyncNotification(' All scholarships already synced', 'success', 3000);
             isSyncing = false;
             return;
         }
@@ -378,9 +378,9 @@ async function performAutoSync() {
             // Log batch results
             batchResults.forEach(result => {
                 if (result.success) {
-                    console.log(`✅ ${result.name} synced`);
+                    console.log(` ${result.name} synced`);
                 } else {
-                    console.log(`❌ ${result.name}: ${result.error}`);
+                    console.log(` ${result.name}: ${result.error}`);
                 }
             });
         }
@@ -392,12 +392,12 @@ async function performAutoSync() {
         
         // Show final result
         if (successCount > 0) {
-            showSyncNotification(`✅ ${successCount} 12th scholarships synced`, 'success', 5000);
+            showSyncNotification(` ${successCount} 12th scholarships synced`, 'success', 5000);
             
             // IMPORTANT: Tell user to refresh admin dashboard
             setTimeout(() => {
                 showSyncNotification(
-                    '📊 <strong>Admin dashboard updated!</strong><br><small>Refresh dashboard to see new scholarships</small>', 
+                    ' <strong>Admin dashboard updated!</strong><br><small>Refresh dashboard to see new scholarships</small>', 
                     'success', 
                     8000
                 );
@@ -407,11 +407,11 @@ async function performAutoSync() {
             showSyncNotification('⚠️ Could not sync scholarships', 'warning', 5000);
         }
         
-        console.log(`📊 Sync complete: ${successCount}/${pendingApps.length} successful`);
+        console.log(` Sync complete: ${successCount}/${pendingApps.length} successful`);
         
     } catch (error) {
-        console.error('❌ Error during auto-sync:', error);
-        showSyncNotification('❌ Sync failed: ' + error.message, 'error', 5000);
+        console.error(' Error during auto-sync:', error);
+        showSyncNotification(' Sync failed: ' + error.message, 'error', 5000);
         
     } finally {
         isSyncing = false;
@@ -421,20 +421,20 @@ async function performAutoSync() {
 // ================= FORM SUBMISSION HANDLER =================
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    console.log('📝 12th Scholarship form submitted');
+    console.log(' 12th Scholarship form submitted');
     
     // Disable button
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
     submitBtn.disabled = true;
-    submitBtn.textContent = "⏳ Saving...";
+    submitBtn.textContent = " Saving...";
     submitBtn.style.opacity = "0.7";
     submitBtn.style.cursor = "not-allowed";
     
     try {
         // 1. Get form data
         const formData = getFormData();
-        console.log('📋 Form data collected:', formData);
+        console.log(' Form data collected:', formData);
         
         // 2. Validate
         const validation = validateForm(formData);
@@ -446,7 +446,7 @@ form.addEventListener("submit", async (e) => {
         const validatedData = validation.data;
         
         // 3. Show immediate feedback
-        showSyncNotification('💾 Saving scholarship...', 'info', 2000);
+        showSyncNotification('Saving scholarship...', 'info', 2000);
         
         // 4. Save locally first (ALWAYS)
         const saveResult = saveToLocalStorage(validatedData);
@@ -455,19 +455,19 @@ form.addEventListener("submit", async (e) => {
             throw new Error("Failed to save locally");
         }
         
-        console.log('✅ Saved locally with ID:', saveResult.id);
+        console.log(' Saved locally with ID:', saveResult.id);
         
         // 5. Update UI
-        showSyncNotification('✅ 12th Scholarship saved!', 'success', 2000);
+        showSyncNotification(' 12th Scholarship saved!', 'success', 2000);
         
         // 6. Try online submission if connected
         if (navigator.onLine) {
-            showSyncNotification('🌐 Uploading to server...', 'info', 2000);
+            showSyncNotification(' Uploading to server...', 'info', 2000);
             
             const backendResult = await submitToBackend(validatedData, saveResult.id);
             
             if (backendResult.success) {
-                showSyncNotification(`✅ ${validatedData.name}'s scholarship submitted!`, 'success', 3000);
+                showSyncNotification(` ${validatedData.name}'s scholarship submitted!`, 'success', 3000);
                 
                 // Reset form
                 form.reset();
@@ -475,21 +475,21 @@ form.addEventListener("submit", async (e) => {
                 // IMPORTANT: Tell user data is now in admin dashboard
                 setTimeout(() => {
                     showSyncNotification(
-                        '📊 <strong>Data available in admin dashboard!</strong><br><small>Refresh dashboard to see it</small>', 
+                        ' <strong>Data available in admin dashboard!</strong><br><small>Refresh dashboard to see it</small>', 
                         'success', 
                         5000
                     );
                 }, 1000);
                 
             } else {
-                showSyncNotification(`⚠️ Saved locally. Will sync automatically.`, 'warning', 3000);
+                showSyncNotification(` Saved locally. Will sync automatically.`, 'warning', 3000);
             }
         } else {
-            showSyncNotification("📴 Saved offline. Will sync when online.", "info", 3000);
+            showSyncNotification(" Saved offline. Will sync when online.", "info", 3000);
             
             // Schedule immediate sync when we come online
             const syncOnOnline = () => {
-                showSyncNotification('🌐 Back online! Syncing...', 'info', 2000);
+                showSyncNotification(' Back online! Syncing...', 'info', 2000);
                 performAutoSync();
                 window.removeEventListener('online', syncOnOnline);
             };
@@ -497,8 +497,8 @@ form.addEventListener("submit", async (e) => {
         }
         
     } catch (error) {
-        console.error('🚨 Form submission error:', error);
-        showSyncNotification(`❌ Error: ${error.message}`, "error", 3000);
+        console.error(' Form submission error:', error);
+        showSyncNotification(` Error: ${error.message}`, "error", 3000);
         
     } finally {
         // Re-enable button
@@ -511,10 +511,10 @@ form.addEventListener("submit", async (e) => {
 
 // ================= INSTANT ONLINE SYNC =================
 window.addEventListener('online', async () => {
-    console.log('📶 Device is online. Starting INSTANT sync for 12th scholarships...');
+    console.log(' Device is online. Starting INSTANT sync for 12th scholarships...');
     
     // Show immediate notification
-    showSyncNotification('🌐 Back online! Checking offline scholarships...', 'info', 2000);
+    showSyncNotification(' Back online! Checking offline scholarships...', 'info', 2000);
     
     // Check immediately if there are pending apps
     setTimeout(async () => {
@@ -522,7 +522,7 @@ window.addEventListener('online', async () => {
             const pendingApps = getPendingApplications();
             
             if (pendingApps.length > 0) {
-                showSyncNotification(`🔄 Found ${pendingApps.length} offline 12th scholarships`, 'info', 2000);
+                showSyncNotification(` Found ${pendingApps.length} offline 12th scholarships`, 'info', 2000);
                 
                 // Start sync after short delay
                 setTimeout(() => {
@@ -537,18 +537,18 @@ window.addEventListener('online', async () => {
 
 // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("📄 12th Scholarship page loaded");
+    console.log(" 12th Scholarship page loaded");
     
     if (!form) {
-        console.error("❌ Form not found!");
+        console.error(" Form not found!");
         return;
     }
     
-    console.log("✅ Form found");
+    console.log(" Form found");
     
     // Add manual sync button
     const syncBtn = document.createElement('button');
-    syncBtn.textContent = '🔄 Sync 12th Scholarships';
+    syncBtn.textContent = ' Sync 12th Scholarships';
     syncBtn.style.cssText = `
         background: linear-gradient(135deg, #FF9800 0%, #FF5722 100%);
         color: white;
@@ -573,7 +573,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (navigator.onLine) {
             performAutoSync();
         } else {
-            showSyncNotification('⚠️ You are offline', 'warning', 2000);
+            showSyncNotification(' You are offline', 'warning', 2000);
         }
     };
     
@@ -591,8 +591,8 @@ document.addEventListener('DOMContentLoaded', function() {
         border: 1px solid ${navigator.onLine ? '#c3e6cb' : '#ffeaa7'};
     `;
     statusDiv.innerHTML = navigator.onLine ? 
-        '✅ Online - Real-time sync' : 
-        '⚠️ Offline - Saving locally';
+        ' Online - Real-time sync' : 
+        ' Offline - Saving locally';
     
     // Add to form
     if (form && form.parentNode) {
@@ -604,14 +604,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update status indicator when network changes
     window.addEventListener('online', () => {
-        statusDiv.innerHTML = '✅ Online - Real-time sync';
+        statusDiv.innerHTML = ' Online - Real-time sync';
         statusDiv.style.background = '#d4edda';
         statusDiv.style.color = '#155724';
         statusDiv.style.borderColor = '#c3e6cb';
     });
     
     window.addEventListener('offline', () => {
-        statusDiv.innerHTML = '⚠️ Offline - Saving locally';
+        statusDiv.innerHTML = ' Offline - Saving locally';
         statusDiv.style.background = '#fff3cd';
         statusDiv.style.color = '#856404';
         statusDiv.style.borderColor = '#ffeaa7';
@@ -625,7 +625,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (pendingApps.length > 0) {
                     console.log(`Found ${pendingApps.length} pending 12th scholarships on load`);
-                    showSyncNotification(`🔄 ${pendingApps.length} pending scholarships found`, 'info', 3000);
+                    showSyncNotification(` ${pendingApps.length} pending scholarships found`, 'info', 3000);
                     
                     // Auto-sync after 3 seconds
                     setTimeout(() => {
@@ -658,7 +658,7 @@ window.debugScholar12Data = async function() {
     try {
         const pendingApps = getPendingApplications();
         
-        console.group('📊 DEBUG: Scholarship12 Local Storage');
+        console.group(' DEBUG: Scholarship12 Local Storage');
         console.log('Total pending 12th scholarships:', pendingApps.length);
         
         pendingApps.forEach((app, index) => {
@@ -699,14 +699,14 @@ window.forceScholar12Sync = function() {
 window.clearScholar12Data = function() {
     if (confirm('Clear all saved 12th scholarship applications?')) {
         localStorage.removeItem(STORAGE_KEY);
-        showSyncNotification('✅ All 12th scholarship data cleared', 'success', 3000);
+        showSyncNotification(' All 12th scholarship data cleared', 'success', 3000);
         console.log('Cleared all 12th scholarship data');
     }
 };
 
 // ================= OFFLINE TEST FUNCTION =================
 window.testOfflineScholarship12 = function() {
-    console.log('🧪 Testing 12th scholarship offline functionality...');
+    console.log(' Testing 12th scholarship offline functionality...');
     
     // Fill form with test data
     document.getElementById('name').value = 'Test Student 12th';
@@ -721,11 +721,11 @@ window.testOfflineScholarship12 = function() {
     setTimeout(() => {
         const pendingApps = getPendingApplications();
         console.log(`Test complete. Pending 12th scholarships: ${pendingApps.length}`);
-        alert(`✅ 12th Offline test complete!\n\n${pendingApps.length} scholarship(s) saved locally.\nGo online to sync them.`);
+        alert(` 12th Offline test complete!\n\n${pendingApps.length} scholarship(s) saved locally.\nGo online to sync them.`);
     }, 1000);
 };
 
-console.log('✅ 12th Scholarship form system ready with OFFLINE-FIRST sync');
+console.log(' 12th Scholarship form system ready with OFFLINE-FIRST sync');
 console.log('Debug commands:');
 console.log('debugScholar12Data() - View saved 12th scholarships');
 console.log('forceScholar12Sync() - Manual sync');
