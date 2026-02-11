@@ -6,12 +6,14 @@
     { "src": "*.css", "use": "@vercel/static" }
   ],
   "rewrites": [
-    { "source": "/", "destination": "/home.html" },         
-    { "source": "/admin", "destination": "/admin-lock.html" }, 
+    { "source": "/admin", "destination": "/admin-lock.html" },
     { "source": "/admin/:path*", "destination": "/admin-lock.html" },
+    { "source": "/admin-login", "destination": "/admin-lock.html" },
     { "source": "/gov/:path*", "destination": "/server.js" },
     { "source": "/sync/:path*", "destination": "/server.js" },
     { "source": "/health", "destination": "/server.js" },
     { "source": "/community/:path*", "destination": "/server.js" }
   ]
 }
+
+
