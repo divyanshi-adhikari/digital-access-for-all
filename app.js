@@ -1,4 +1,3 @@
-// app.js - Government Scheme Form (FIXED FIELD NAMES)
 console.log(" Government Scheme Form Initializing...");
 
 // Configuration
@@ -9,43 +8,72 @@ const CONFIG = {
     RETRY_DELAY: 1000
 };
 
-// ================= UTILITY FUNCTIONS =================
-function showMessage(message, type = 'info') {
-    console.log(`${type}: ${message}`);
-    
-    const existingMsg = document.querySelector('.form-message');
-    if (existingMsg) existingMsg.remove();
-    
-    const msgEl = document.createElement('div');
-    msgEl.className = `form-message ${type}`;
-    msgEl.textContent = message;
-    msgEl.style.cssText = `
-        padding: 12px 20px;
-        margin: 15px 0;
-        border-radius: 6px;
+// ================= TRACK SYNC STATE =================
+let isSyncing = false;
+
+// ================= SHOW SYNC NOTIFICATION =================
+function showSyncNotification(message, type = 'info', duration = 5000) {
+    const notification = document.createElement('div');
+    notification.className = 'sync-notification';
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#4CAF50' : 
+                     type === 'error' ? '#f44336' : 
+                     type === 'warning' ? '#ff9800' : '#2196F3'};
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        z-index: 10000;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         font-weight: bold;
-        border: 1px solid;
-        background-color: ${type === 'success' ? '#d4edda' : 
-                            type === 'error' ? '#f8d7da' : 
-                            type === 'warning' ? '#fff3cd' : '#d1ecf1'};
-        color: ${type === 'success' ? '#155724' : 
-                type === 'error' ? '#721c24' : 
-                type === 'warning' ? '#856404' : '#0c5460'};
-        border-color: ${type === 'success' ? '#c3e6cb' : 
-                            type === 'error' ? '#f5c6cb' : 
-                            type === 'warning' ? '#ffeaa7' : '#bee5eb'};
+        max-width: 300px;
+        animation: slideIn 0.3s ease;
+        border-left: 5px solid ${type === 'success' ? '#45a049' : 
+                             type === 'error' ? '#d32f2f' : 
+                             type === 'warning' ? '#f57c00' : '#1976D2'};
     `;
     
-    const form = document.getElementById('govForm');
-    if (form && form.parentNode) {
-        form.parentNode.insertBefore(msgEl, form.nextSibling);
+    notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span>${type === 'success' ? '' : 
+                   type === 'error' ? '' : 
+                   type === 'warning' ? '' : ''}</span>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Add CSS animations if not already present
+    if (!document.getElementById('notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
     }
     
-    if (type !== 'error') {
-        setTimeout(() => {
-            if (msgEl.parentNode) msgEl.remove();
-        }, 5000);
-    }
+    // Auto-remove after duration
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }
+    }, duration);
 }
 
 // ================= LOCAL STORAGE =================
@@ -104,7 +132,6 @@ function getPendingApplications() {
 
 // ================= GET FORM DATA =================
 function getFormData() {
-    // SAFE way to get form data
     const getValue = (id) => {
         const el = document.getElementById(id);
         return el ? el.value.trim() : '';
@@ -125,18 +152,18 @@ function getFormData() {
 function validateForm(formData) {
     const errors = [];
     
-    if (!formData.name) errors.push('name');
-    if (!formData.dob) errors.push('dob');
-    if (!formData.state) errors.push('state');
-    if (!formData.city) errors.push('city');
-    if (!formData.address) errors.push('address');
-    if (!formData.category) errors.push('category');
-    if (!formData.income) errors.push('income');
+    if (!formData.name) errors.push('Full Name');
+    if (!formData.dob) errors.push('Date of Birth');
+    if (!formData.state) errors.push('State');
+    if (!formData.city) errors.push('City');
+    if (!formData.address) errors.push('Address');
+    if (!formData.category) errors.push('Category');
+    if (!formData.income) errors.push('Annual Income');
     
     if (errors.length > 0) {
         return {
             valid: false,
-            message: `Missing fields: ${errors.join(', ')}`
+            message: `Please fill: ${errors.join(', ')}`
         };
     }
     
@@ -144,16 +171,16 @@ function validateForm(formData) {
     if (isNaN(income) || income < 0) {
         return {
             valid: false,
-            message: 'Income must be a valid positive number'
+            message: 'Annual Income must be a valid positive number'
         };
     }
     
     return { valid: true };
 }
 
-// ================= SUBMIT TO BACKEND (FIXED FIELD NAMES) =================
-async function submitToBackend(formData, retryCount = 0) {
-    console.log(`Submitting to backend (attempt ${retryCount + 1})`);
+// ================= FAST SUBMIT TO BACKEND =================
+async function submitToBackend(formData, dbId = null, retryCount = 0) {
+    console.log(` Submitting to backend (attempt ${retryCount + 1})`);
     
     try {
         const payload = {
@@ -167,10 +194,9 @@ async function submitToBackend(formData, retryCount = 0) {
             submission_time: new Date().toISOString()
         };
         
-        console.log(' Payload to backend:', payload);
-        console.log(' Payload JSON:', JSON.stringify(payload));
+        console.log(' Payload:', payload);
         
-        // Submit to backend
+        // Add timeout for faster failure
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
         
@@ -184,11 +210,16 @@ async function submitToBackend(formData, retryCount = 0) {
             signal: controller.signal
         }).finally(() => clearTimeout(timeoutId));
         
-        console.log(` Response status: ${response.status} ${response.statusText}`);
+        console.log(` Response: ${response.status} ${response.statusText}`);
         
         if (response.ok) {
             const result = await response.json();
-            console.log(' Backend submission successful:', result);
+            console.log('Backend submission successful:', result);
+            
+            if (dbId) {
+                await updateLocalStatus(dbId, 'synced', JSON.stringify(result));
+            }
+            
             return { success: true, data: result };
         } else {
             let errorText = 'Server error';
@@ -203,13 +234,13 @@ async function submitToBackend(formData, retryCount = 0) {
                 }
             }
             
-            console.error(' Server error:', errorText);
+            console.error('Server error:', errorText);
             
             // Retry on server errors
             if (retryCount < CONFIG.MAX_RETRIES && response.status >= 500) {
                 console.log(` Retrying in ${CONFIG.RETRY_DELAY}ms...`);
                 await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
-                return await submitToBackend(formData, retryCount + 1);
+                return await submitToBackend(formData, dbId, retryCount + 1);
             }
             
             return { 
@@ -220,12 +251,12 @@ async function submitToBackend(formData, retryCount = 0) {
         }
         
     } catch (error) {
-        console.error( 'Network error:', error.message);
+        console.error(' Network error:', error.message);
         
         if (retryCount < CONFIG.MAX_RETRIES) {
             console.log(` Retrying network error in ${CONFIG.RETRY_DELAY}ms...`);
             await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
-            return await submitToBackend(formData, retryCount + 1);
+            return await submitToBackend(formData, dbId, retryCount + 1);
         }
         
         return { 
@@ -238,13 +269,18 @@ async function submitToBackend(formData, retryCount = 0) {
 // ================= CHECK BACKEND CONNECTION =================
 async function checkBackendConnection() {
     try {
+        // Quick connection test with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
         const response = await fetch(CONFIG.BACKEND_URL, {
             method: 'HEAD',
-            cache: 'no-cache'
-        }).catch(() => null);
+            cache: 'no-cache',
+            signal: controller.signal
+        }).finally(() => clearTimeout(timeoutId));
         
         const isConnected = response && response.ok;
-        console.log(`Backend connection: ${isConnected ? ' Connected' : ' Not connected'}`);
+        console.log(` Backend connection: ${isConnected ? ' Connected' : ' Not connected'}`);
         return isConnected;
     } catch (error) {
         console.log('Backend connection check failed:', error.message);
@@ -252,10 +288,148 @@ async function checkBackendConnection() {
     }
 }
 
+// ================= FAST AUTO-SYNC =================
+async function performAutoSync() {
+    if (isSyncing) {
+        showSyncNotification('Sync already in progress...', 'warning', 2000);
+        return;
+    }
+    
+    isSyncing = true;
+    console.log('Starting FAST auto-sync...');
+    showSyncNotification(' Syncing offline applications...', 'info', 3000);
+    
+    try {
+        const pendingApps = getPendingApplications();
+        
+        console.log(`Found ${pendingApps.length} scheme applications to sync`);
+        
+        if (pendingApps.length === 0) {
+            showSyncNotification('All applications already synced', 'success', 3000);
+            isSyncing = false;
+            return;
+        }
+        
+        // Show progress
+        const progressDiv = document.createElement('div');
+        progressDiv.id = 'syncProgress';
+        progressDiv.style.cssText = `
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: #2196F3;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 5px;
+            z-index: 9999;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            max-width: 300px;
+            font-size: 14px;
+        `;
+        progressDiv.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 5px;"> Uploading ${pendingApps.length} applications</div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="flex: 1; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; overflow: hidden;">
+                    <div id="syncProgressBar" style="height: 100%; background: white; width: 0%; transition: width 0.3s;"></div>
+                </div>
+                <span id="syncCounter">0/${pendingApps.length}</span>
+            </div>
+        `;
+        document.body.appendChild(progressDiv);
+        
+        let successCount = 0;
+        
+        // Process applications in parallel batches (faster!)
+        const BATCH_SIZE = 3;
+        
+        for (let i = 0; i < pendingApps.length; i += BATCH_SIZE) {
+            const batch = pendingApps.slice(i, i + BATCH_SIZE);
+            const promises = batch.map(async (app, batchIndex) => {
+                const absoluteIndex = i + batchIndex;
+                
+                try {
+                    // Update progress UI
+                    document.getElementById('syncCounter').textContent = 
+                        `${absoluteIndex + 1}/${pendingApps.length}`;
+                    document.getElementById('syncProgressBar').style.width = 
+                        `${((absoluteIndex + 1) / pendingApps.length) * 100}%`;
+                    
+                    const formData = {
+                        name: app.name || '',
+                        dob: app.dob || '',
+                        state: app.state || '',
+                        city: app.city || '',
+                        address: app.address || '',
+                        category: app.category || '',
+                        income: app.income || ''
+                    };
+                    
+                    console.log(`Submitting ${absoluteIndex + 1}/${pendingApps.length}: ${app.name}`);
+                    
+                    const result = await submitToBackend(formData, app.id);
+                    
+                    if (result.success) {
+                        successCount++;
+                        return { success: true, name: app.name };
+                    } else {
+                        return { success: false, name: app.name, error: result.error };
+                    }
+                    
+                } catch (error) {
+                    return { success: false, name: app.name, error: error.message };
+                }
+            });
+            
+            // Wait for this batch to complete
+            const batchResults = await Promise.all(promises);
+            
+            // Log batch results
+            batchResults.forEach(result => {
+                if (result.success) {
+                    console.log(` ${result.name} synced`);
+                } else {
+                    console.log(` ${result.name}: ${result.error}`);
+                }
+            });
+        }
+        
+        // Remove progress
+        if (progressDiv.parentNode) {
+            progressDiv.parentNode.removeChild(progressDiv);
+        }
+        
+        // Show final result
+        if (successCount > 0) {
+            showSyncNotification(` ${successCount} scheme applications synced`, 'success', 5000);
+            
+            // IMPORTANT: Tell user to refresh admin dashboard
+            setTimeout(() => {
+                showSyncNotification(
+                    ' <strong>Admin dashboard updated!</strong><br><small>Refresh dashboard page to see new data</small>', 
+                    'success', 
+                    8000
+                );
+            }, 1000);
+            
+        } else {
+            showSyncNotification(' Could not sync applications', 'warning', 5000);
+        }
+        
+        console.log(` Sync complete: ${successCount}/${pendingApps.length} successful`);
+        
+    } catch (error) {
+        console.error(' Error during auto-sync:', error);
+        showSyncNotification(' Sync failed: ' + error.message, 'error', 5000);
+        
+    } finally {
+        isSyncing = false;
+    }
+}
+
 // ================= FORM SUBMISSION HANDLER =================
 async function handleFormSubmit(event) {
     event.preventDefault();
-    console.log(' Form submission started');
+    console.log(' Scheme form submitted');
     
     const form = document.getElementById('govForm');
     const submitBtn = form.querySelector('button[type="submit"]');
@@ -263,31 +437,38 @@ async function handleFormSubmit(event) {
     
     // Disable button
     submitBtn.disabled = true;
-    submitBtn.textContent = "Saving...";
+    submitBtn.textContent = " Saving...";
     submitBtn.style.opacity = "0.7";
     submitBtn.style.cursor = "not-allowed";
     
     try {
         // 1. Get form data
         const formData = getFormData();
-        console.log(' Form data collected:', formData);
+        console.log('Form data collected:', formData);
         
         // 2. Validate
         const validation = validateForm(formData);
         if (!validation.valid) {
-            showMessage(validation.message, 'error');
+            showSyncNotification(validation.message, 'error', 3000);
             return;
         }
         
-        // 3. Save locally first
-        showMessage(" Saving details locally...", "info");
+        // 3. Show immediate feedback
+        showSyncNotification(' Saving application...', 'info', 2000);
+        
+        // 4. Save locally first
         const saveResult = saveToLocalStorage(formData);
         
         if (!saveResult.success) {
             throw new Error("Failed to save locally");
         }
         
-        // 4. Try online submission if connected
+        console.log(' Saved locally with ID:', saveResult.id);
+        
+        // 5. Update UI
+        showSyncNotification(' Application saved!', 'success', 2000);
+        
+        // 6. Try online submission if connected
         const isBrowserOnline = navigator.onLine;
         console.log(` Browser online status: ${isBrowserOnline ? 'Online' : 'Offline'}`);
         
@@ -295,14 +476,13 @@ async function handleFormSubmit(event) {
             const isBackendConnected = await checkBackendConnection();
             
             if (isBackendConnected) {
-                showMessage(" Submitting online...", "info");
+                // Submit immediately when online
+                showSyncNotification(' Uploading to server...', 'info', 2000);
                 
-                const backendResult = await submitToBackend(formData);
+                const backendResult = await submitToBackend(formData, saveResult.id);
                 
                 if (backendResult.success) {
-                    updateLocalStatus(saveResult.id, 'synced', 'Submitted successfully');
-                    showMessage(" Application submitted successfully!", "success");
-                    console.log(' Form submitted and synced!');
+                    showSyncNotification(` ${formData.name}'s application submitted!`, 'success', 3000);
                     
                     // Reset form
                     form.reset();
@@ -313,25 +493,39 @@ async function handleFormSubmit(event) {
                         const today = new Date().toISOString().split('T')[0];
                         dobField.value = today;
                     }
+                    
+                    // IMPORTANT: Tell user data is now in admin dashboard
+                    setTimeout(() => {
+                        showSyncNotification(
+                            ' <strong>Data available in admin dashboard!</strong><br><small>Refresh dashboard to see it</small>', 
+                            'success', 
+                            5000
+                        );
+                    }, 1000);
+                    
                 } else {
-                    updateLocalStatus(saveResult.id, 'pending', backendResult.error);
-                    showMessage(" Saved locally. Server error: " + backendResult.error, "warning");
-                    console.log('Backend submission failed:', backendResult.error);
+                    showSyncNotification(` Saved locally. Will sync automatically.`, 'warning', 3000);
                 }
             } else {
                 updateLocalStatus(saveResult.id, 'pending', 'Backend not reachable');
-                showMessage(" Saved locally. Server connection issue.", "warning");
-                console.log('Backend not reachable despite being online');
+                showSyncNotification(" Saved locally. Server connection issue.", "warning", 3000);
             }
         } else {
             updateLocalStatus(saveResult.id, 'pending', 'Device offline');
-            showMessage(" Saved offline. Will sync when back online.", "warning");
-            console.log('Offline mode - saved locally only');
+            showSyncNotification(" Saved offline. Will sync when online.", "info", 3000);
+            
+            // Schedule immediate sync when we come online
+            const syncOnOnline = () => {
+                showSyncNotification(' Back online! Syncing...', 'info', 2000);
+                performAutoSync();
+                window.removeEventListener('online', syncOnOnline);
+            };
+            window.addEventListener('online', syncOnOnline);
         }
         
     } catch (error) {
         console.error(' Form submission error:', error);
-        showMessage(` Error: ${error.message}`, "error");
+        showSyncNotification(` Error: ${error.message}`, "error", 3000);
         
     } finally {
         // Re-enable button
@@ -342,62 +536,35 @@ async function handleFormSubmit(event) {
     }
 }
 
-// ================= AUTO SYNC =================
-async function retryPendingSubmissions() {
-    console.log(" Checking for pending submissions...");
+// ================= INSTANT ONLINE SYNC =================
+window.addEventListener('online', async () => {
+    console.log(' Device is online. Starting INSTANT sync...');
     
-    if (!navigator.onLine) {
-        console.log('Device is offline, skipping auto-sync');
-        return;
-    }
+    // Show immediate notification
+    showSyncNotification(' Back online! Checking for offline data...', 'info', 2000);
     
-    const isBackendConnected = await checkBackendConnection();
-    if (!isBackendConnected) {
-        console.log('Backend not reachable, skipping auto-sync');
-        return;
-    }
-    
-    const pendingApps = getPendingApplications();
-    console.log(`Found ${pendingApps.length} pending applications`);
-    
-    if (pendingApps.length === 0) return;
-    
-    showMessage(`Syncing ${pendingApps.length} pending application(s)...`, "info");
-    
-    let successCount = 0;
-    
-    for (const app of pendingApps) {
+    // Check immediately if there are pending apps
+    setTimeout(async () => {
         try {
-            console.log(`Retrying submission for app ${app.id}`);
+            const pendingApps = getPendingApplications();
             
-            // Extract form data
-            const { id, savedAt, status, syncedAt, syncMessage, ...formData } = app;
-            
-            const result = await submitToBackend(formData);
-            
-            if (result.success) {
-                updateLocalStatus(app.id, 'synced', 'Auto-synced successfully');
-                successCount++;
-                console.log(` Auto-synced app ${app.id}`);
-            } else {
-                console.log(` Failed to auto-sync app ${app.id}:`, result.error);
+            if (pendingApps.length > 0) {
+                showSyncNotification(` Found ${pendingApps.length} offline applications`, 'info', 2000);
+                
+                // Start sync after short delay
+                setTimeout(() => {
+                    performAutoSync();
+                }, 1000);
             }
-            
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
         } catch (error) {
-            console.error(`Error syncing app ${app.id}:`, error);
+            console.error('Error checking pending:', error);
         }
-    }
-    
-    if (successCount > 0) {
-        showMessage(` Successfully synced ${successCount} application(s)`, "success");
-    }
-}
+    }, 500);
+});
 
 // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOM loaded, initializing form...");
+    console.log(" Page loaded, initializing form...");
     
     const form = document.getElementById('govForm');
     
@@ -406,7 +573,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
-    console.log(" Form found");
+    console.log("Form found");
     
     // Add submit handler
     form.addEventListener('submit', handleFormSubmit);
@@ -419,108 +586,162 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Set default date to:', today);
     }
     
-    // Update online status
-    updateOnlineStatus();
-    
-    // Check for pending submissions
-    setTimeout(async () => {
+    // Add manual sync button
+    const syncBtn = document.createElement('button');
+    syncBtn.textContent = ' Sync Now';
+    syncBtn.style.cssText = `
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-top: 15px;
+        font-weight: bold;
+        width: 100%;
+        transition: all 0.3s;
+    `;
+    syncBtn.onmouseenter = () => {
+        syncBtn.style.transform = 'translateY(-2px)';
+        syncBtn.style.boxShadow = '0 5px 15px rgba(102, 126, 234, 0.4)';
+    };
+    syncBtn.onmouseleave = () => {
+        syncBtn.style.transform = 'translateY(0)';
+        syncBtn.style.boxShadow = 'none';
+    };
+    syncBtn.onclick = () => {
         if (navigator.onLine) {
-            const isConnected = await checkBackendConnection();
-            if (isConnected) {
-                retryPendingSubmissions();
-            }
+            performAutoSync();
+        } else {
+            showSyncNotification(' You are offline', 'warning', 2000);
         }
-    }, 2000);
-});
-
-// ================= ONLINE/OFFLINE STATUS =================
-function updateOnlineStatus() {
-    const statusElement = document.getElementById('offline-status');
-    if (!statusElement) return;
-    
-    if (navigator.onLine) {
-        statusElement.textContent = ' Online - Ready to submit';
-        statusElement.style.color = 'green';
-    } else {
-        statusElement.textContent = '⚠ Offline - Saving locally';
-        statusElement.style.color = 'orange';
-    }
-}
-
-// Network event listeners
-window.addEventListener('online', function() {
-    console.log(' Device came online');
-    updateOnlineStatus();
-    
-    setTimeout(() => {
-        showMessage(" Back online, checking for pending submissions...", "info");
-        retryPendingSubmissions();
-    }, 1500);
-});
-
-window.addEventListener('offline', function() {
-    console.log(' Device went offline');
-    updateOnlineStatus();
-    showMessage(" You are now offline", "warning");
-});
-
-// ================= TEST FUNCTIONS =================
-window.testSubmit = async function() {
-    console.log("Testing direct backend submission...");
-    
-    // Create test data with CORRECT field names
-    const testData = {
-        name: "Test User",
-        dob: "1990-01-01",
-        state: "Maharashtra",
-        city: "Mumbai",
-        address: "Test Address",
-        category: "general",
-        income: 500000
     };
     
-    console.log("Test payload:", testData);
+    // Add status indicator
+    const statusDiv = document.createElement('div');
+    statusDiv.id = 'syncStatusIndicator';
+    statusDiv.style.cssText = `
+        margin-top: 10px;
+        padding: 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        text-align: center;
+        background: ${navigator.onLine ? '#d4edda' : '#fff3cd'};
+        color: ${navigator.onLine ? '#155724' : '#856404'};
+        border: 1px solid ${navigator.onLine ? '#c3e6cb' : '#ffeaa7'};
+    `;
+    statusDiv.innerHTML = navigator.onLine ? 
+        ' Online - Real-time sync' : 
+        ' Offline - Saving locally';
     
+    // Add to form
+    if (form && form.parentNode) {
+        const container = document.createElement('div');
+        container.appendChild(syncBtn);
+        container.appendChild(statusDiv);
+        form.parentNode.insertBefore(container, form.nextSibling);
+    }
+    
+    // Update status indicator when network changes
+    window.addEventListener('online', () => {
+        statusDiv.innerHTML = ' Online - Real-time sync';
+        statusDiv.style.background = '#d4edda';
+        statusDiv.style.color = '#155724';
+        statusDiv.style.borderColor = '#c3e6cb';
+    });
+    
+    window.addEventListener('offline', () => {
+        statusDiv.innerHTML = ' Offline - Saving locally';
+        statusDiv.style.background = '#fff3cd';
+        statusDiv.style.color = '#856404';
+        statusDiv.style.borderColor = '#ffeaa7';
+    });
+    
+    // Auto-sync on load if online and there are pending apps
+    if (navigator.onLine) {
+        setTimeout(async () => {
+            try {
+                const pendingApps = getPendingApplications();
+                
+                if (pendingApps.length > 0) {
+                    console.log(`Found ${pendingApps.length} pending apps on load`);
+                    showSyncNotification(` ${pendingApps.length} pending applications found`, 'info', 3000);
+                    
+                    // Auto-sync after 3 seconds
+                    setTimeout(() => {
+                        performAutoSync();
+                    }, 3000);
+                }
+            } catch (error) {
+                console.error('Error checking pending on load:', error);
+            }
+        }, 1000);
+    }
+});
+
+// ================= PERIODIC SYNC CHECK =================
+// Check every 30 seconds if we have pending apps (when online)
+setInterval(() => {
+    if (navigator.onLine && !isSyncing) {
+        const pendingApps = getPendingApplications();
+        
+        if (pendingApps.length > 0) {
+            console.log('Periodic check: Found', pendingApps.length, 'pending apps');
+            // Auto-sync if we find pending apps
+            performAutoSync();
+        }
+    }
+}, 30000); // 30 seconds
+
+// ================= DEBUG FUNCTIONS =================
+window.debugSchemeData = async function() {
     try {
-        const response = await fetch(`${CONFIG.BACKEND_URL}${CONFIG.ENDPOINT}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(testData)
+        const pendingApps = getPendingApplications();
+        
+        console.group(' DEBUG: Local Storage Contents');
+        console.log('Total scheme applications:', pendingApps.length);
+        
+        pendingApps.forEach((app, index) => {
+            console.group(`Application ${index + 1}:`);
+            console.log('ID:', app.id);
+            console.log('Name:', app.name);
+            console.log('Status:', app.status);
+            console.log('State:', app.state);
+            console.log('Category:', app.category);
+            console.log('Income:', app.income);
+            console.log('Created:', app.savedAt);
+            console.groupEnd();
         });
         
-        const result = await response.json();
-        console.log("Test response:", result);
-        alert(`Test result: ${response.ok ? 'SUCCESS' : 'FAILED'}\n\n${JSON.stringify(result, null, 2)}`);
+        // Show duplicates
+        const names = pendingApps.map(app => app.name);
+        const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
+        if (duplicates.length > 0) {
+            console.warn(' Possible duplicates:', [...new Set(duplicates)]);
+        }
+        
+        console.groupEnd();
+        
+        // Show in alert
+        const summary = pendingApps.map(app => 
+            `• ${app.name || 'Unknown'} (${app.status}) - ${app.state || 'No state'}`
+        ).join('\n');
+        
+        alert(`Scheme Applications (${pendingApps.length}):\n\n${summary || 'No applications'}`);
         
     } catch (error) {
-        console.error("Test failed:", error);
-        alert("Test failed: " + error.message);
+        console.error('Debug error:', error);
+        alert('Debug error: ' + error.message);
     }
 };
 
-window.checkPayload = function() {
-    // Get current form values
-    const formData = getFormData();
-    
-    // Create payload exactly as it would be sent
-    const payload = {
-        name: formData.name,
-        dob: formData.dob,
-        state: formData.state,
-        city: formData.city,
-        address: formData.address,
-        category: formData.category,
-        income: parseFloat(formData.income) || 0,
-        submission_time: new Date().toISOString()
-    };
-    
-    console.log("Current form payload would be:", payload);
-    console.log("JSON string:", JSON.stringify(payload));
-    
-    alert("Payload that will be sent:\n\n" + JSON.stringify(payload, null, 2));
+window.manualSync = function() {
+    if (navigator.onLine) {
+        performAutoSync();
+    } else {
+        alert('You are offline. Cannot sync now.');
+    }
 };
 
-console.log("Form system initialized!");
-console.log("Test commands:");
-console.log("testSubmit() - Test backend directly");
-console.log("checkPayload() - Check what data will be sent");
+console.log('Scheme form system ready with FAST sync');
+console.log('Debug commands: debugSchemeData(), manualSync()');
