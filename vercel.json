@@ -6,12 +6,10 @@
     { "src": "*.css", "use": "@vercel/static" }
   ],
   "rewrites": [
-    { "source": "/", "destination": "/home.html" },
-
-    { "source": "/admin", "destination": "/admin-lock.html" },
-    { "source": "/admin/:path*", "destination": "/admin-lock.html" },
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/home", "destination": "/home.html" },
     { "source": "/admin-login", "destination": "/admin-lock.html" },
-
+    { "source": "/admin-dashboard", "destination": "/admin.html" },
     { "source": "/gov/:path*", "destination": "/server.js" },
     { "source": "/sync/:path*", "destination": "/server.js" },
     { "source": "/health", "destination": "/server.js" },
