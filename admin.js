@@ -1,5 +1,6 @@
 // ================= ADMIN.JS - PERMANENT STATUS FIX =================
-const API_BASE = ""; 
+const API_BASE = "http://localhost:4000";
+
 // ================= AUTH CHECK =================
 (function() {
     if (localStorage.getItem('adminLoggedIn') !== 'true') {
