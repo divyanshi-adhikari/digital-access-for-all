@@ -1,9 +1,7 @@
-// server.js - ABSOLUTE MINIMUM WORKING VERSION
+// server.js - VERIFIED WORKING FOR VERCEL
 console.log(" Starting Express server...");
 
 const express = require("express");
-
-// Create app
 const app = express();
 
 // VERY IMPORTANT: Add this middleware to parse requests
@@ -45,26 +43,30 @@ try {
   console.log(" Route loading failed:", err.message);
 }
 
-// Test another simple route
+// Test route
 app.get("/test", (req, res) => {
   res.send("Test route is working!");
 });
 
-// Start server on PORT 4000 (to avoid conflicts)
-const PORT = 4000;
-const server = app.listen(PORT, () => {
-  console.log("\n" + "=".repeat(50));
-  console.log(` SERVER STARTED SUCCESSFULLY!`);
-  console.log(` Port: ${PORT}`);
-  console.log(` Test URL: http://localhost:${PORT}/`);
-  console.log(`Test URL: http://localhost:${PORT}/test`);
-  console.log("=".repeat(50) + "\n");
-});
+// ========== LOCAL DEVELOPMENT ONLY ==========
+if (require.main === module) {
+  const PORT = 4000;
+  const server = app.listen(PORT, () => {
+    console.log("\n" + "=".repeat(50));
+    console.log(` SERVER STARTED SUCCESSFULLY!`);
+    console.log(` Port: ${PORT}`);
+    console.log(` Test URL: http://localhost:${PORT}/`);
+    console.log(`Test URL: http://localhost:${PORT}/test`);
+    console.log("=".repeat(50) + "\n");
+  });
 
-// Error handling
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.log(` Port ${PORT} is busy. Trying ${PORT + 1}...`);
-    app.listen(PORT + 1);
-  }
-});
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(` Port ${PORT} is busy. Trying ${PORT + 1}...`);
+      app.listen(PORT + 1);
+    }
+  });
+}
+
+// ========== EXPORT FOR VERCEL ==========
+module.exports = app;
