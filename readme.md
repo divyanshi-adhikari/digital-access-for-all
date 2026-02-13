@@ -143,8 +143,8 @@ Completed
 
 ##  Objective
 
-To create a simple, accessible, and offline-capable digital platform that helps underserved communities access essential services easily.
-
+- To create a simple, accessible, and offline-capable digital platform that helps underserved communities access essential services easily.
+- Focus on improving usability, clarity, and reliability for both users and administrators, while supporting the vision of Atmanirbhar Bharat through inclusive and self-reliant digital access.
 
 ---
 
